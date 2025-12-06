@@ -156,7 +156,7 @@ void SkyBox::Render()
     
     // 设置变换矩阵
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, m_pCamera->Position); // 跟随相机位置
+    model = glm::translate(model, m_pCamera->Position); // 将天空盒移动到相机位置
     model = glm::scale(model, glm::vec3(20.0f)); // 放大天空盒
     glm::mat4 view = m_pCamera->GetViewMatrix();
     
