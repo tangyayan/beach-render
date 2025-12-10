@@ -34,6 +34,7 @@ for x in range(width):
         total_wave_offset += wave['amplitude'] * math.sin(
             2 * math.pi * wave['frequency'] * normalized_x + wave['phase']
         )
+        print(total_wave_offset)
     
     adjusted_seaLevel = seaLevel + total_wave_offset
     
@@ -95,7 +96,7 @@ from PIL import ImageFilter
 image = image.filter(ImageFilter.GaussianBlur(radius=0.5))
 
 # 保存 PNG
-image.save("beach_heightmap.png")
+# image.save("beach_heightmap.png")
 print("生成完成：beach_heightmap.png")
 print(f"使用了 {len(waves)} 层波浪叠加")
 print(f"海洋深度: 0-50")

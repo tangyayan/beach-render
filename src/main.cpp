@@ -6,11 +6,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <light.h>
+
 #include <myinclude/shader.h>
 #include <myinclude/camera.h>
 #include <myinclude/FileSystem.h>
 
 #include <skybox.h>
+#include <scene.h>
 
 #define screenWidth 800.0f
 #define screenHeight 600.0f
@@ -21,7 +24,7 @@ float deltaTime, lastFrame;
 float lastX = screenWidth / 2.0f;
 float lastY = screenHeight / 2.0f;
 bool firstMouse = true;
-Camera camera(glm::vec3(0.0f, 2.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 30.0f, 50.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, -45.0f);
 void processInput(GLFWwindow* window)
 {
     /*
@@ -97,12 +100,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
-struct Light {
-    glm::vec3 position;
-    glm::vec3 ambient;
-    glm::vec3 diffuse;
-    glm::vec3 specular;
-};
 int main()
 {
     glfwInit();
@@ -130,9 +127,10 @@ int main()
     glEnable(GL_DEPTH_TEST);
 
     Light light{
-        glm::vec3(1.2f, 1.0f, 2.0f),
-        glm::vec3(0.2f, 0.2f, 0.2f),
-        glm::vec3(0.5f, 0.5f, 0.5f),
+        // glm::vec3(1.2f, 50.0f, 100.0f),
+        glm::vec3(0.0f, -1.0f, -1.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(0.8f, 0.8f, 0.8f),
         glm::vec3(1.0f, 1.0f, 1.0f)
     };
 
@@ -154,11 +152,12 @@ int main()
         return -1;
     }
 
-    // Terrain terrain("../../../image/sand_disp.png", 10.0f, 10.0f);
-    // terrain.AddTexture(0, "texture_diffuse", "../../../image/sand_diff.jpg");
-    // // texture_diffuse1
-    // Shader terrainShader("../../../src/terrain.vs", "../../../src/terrain.fs");
+    Scene scene({
+        FileSystem::getPath("image/sand_disp.png"),
+        FileSystem::getPath("image/sand_diff.jpg")
+        }, 5.0f, 1.0f, 1.0f);
 
+    float lastFrame = 0.0f;
     while (!glfwWindowShouldClose(window))
     {
         // input
@@ -177,24 +176,10 @@ int main()
         lmodel = glm::rotate(lmodel, (float)glfwGetTime() * glm::radians(20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::vec3 lightPos_ = glm::vec3(lmodel * glm::vec4(lightPos, 1.0f));*/
         //用于对光源进行旋转，以实现多次渲染
+        scene.Draw(light, camera, screenWidth, screenHeight, currentFrame);
 
         skybox.setProjMatrix(glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f));
         skybox.Render();
-
-        // terrainShader.use();
-        // glm::mat4 model = glm::mat4(1.0f);
-        // glm::mat4 view = camera.GetViewMatrix();
-        // glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
-        // terrainShader.setMat4("model", model);
-        // terrainShader.setMat4("view", view);
-        // terrainShader.setMat4("projection", projection);
-        // terrainShader.setVec3("viewPos", camera.Position);
-        // terrainShader.setVec3("light.position", light.position);
-        // terrainShader.setVec3("light.ambient", light.ambient);
-        // terrainShader.setVec3("light.diffuse", light.diffuse);
-        // terrainShader.setVec3("light.specular", light.specular);
-        // terrainShader.setFloat("shininess", 32.0f);
-        // terrain.Draw(terrainShader);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------

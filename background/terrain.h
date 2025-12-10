@@ -10,43 +10,43 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <string>
+#include <cmath>
+#include <algorithm>
 #include <iostream>
 #include <shader.h>
 #include <mesh.h>
+#define PI 3.14159265359f
 
 using namespace std;
 
 class Terrain
 {
 public:
-    Terrain(const std::string& heightmapPath, float heightScale = 10.0f, float horizontalScale = 1.0f)
-        : m_heightScale(heightScale), m_horizontalScale(horizontalScale)
+    Terrain(const std::string& heightmapPath, const vector<Texture>& textures, 
+            float heightScale = 10.0f, float horizontalScale = 1.0f,
+            int lodLevel = 1,// 添加 LOD 级别参数
+            float deepwaterHeight = -1.0f,
+            float maxDistance = 0.8f
+        )  
+        : m_heightScale(heightScale), m_horizontalScale(horizontalScale), m_lodLevel(lodLevel),
+        m_deepwaterHeight(deepwaterHeight), maxDistance(maxDistance)
     {
         LoadHeightmap(heightmapPath);
-        GenerateMesh();
+        GenerateMesh(textures);
     }
 
-    ~Terrain() = default;
+    ~Terrain() 
+    {
+        if (m_mesh) {
+            delete m_mesh;
+            m_mesh = nullptr;
+        }
+    }
 
     void Draw(Shader& shader)
     {
         if (m_mesh) {
             m_mesh->Draw(shader);
-        }
-    }
-
-    // 添加纹理
-    void AddTexture(unsigned int id, const string& type, const string& path)
-    {
-        Texture texture;
-        texture.id = id;
-        texture.type = type;
-        texture.path = path;
-        m_textures.push_back(texture);
-        
-        // 更新 mesh 的纹理
-        if (m_mesh) {
-            m_mesh->textures = m_textures;
         }
     }
 
@@ -61,14 +61,29 @@ public:
         return 0.0f;
     }
 
+    // 获取地形信息
+    int GetWidth() const { return m_width; }
+    int GetHeight() const { return m_height; }
+    glm::vec3 GetCenter() const { return glm::vec3(0.0f, 0.0f, 0.0f); }
+    float GetMaxHeight() const 
+    {
+        float maxH = 0.0f;
+        for (float h : heightData) {
+            if (h > maxH) maxH = h;
+        }
+        return maxH * m_heightScale;
+    }
+
 private:
     vector<float> heightData;
-    vector<Texture> m_textures;
     Mesh* m_mesh = nullptr;
     
     int m_width, m_height;
+    int m_lodLevel;  // LOD 级别 (1=全分辨率, 2=半分辨率, 4=1/4分辨率)
     float m_heightScale;
     float m_horizontalScale;
+    float m_deepwaterHeight;
+    float maxDistance;
 
     void LoadHeightmap(const std::string& path)
     {
@@ -77,24 +92,79 @@ private:
         
         if (!data) {
             std::cout << "Failed to load heightmap: " << path << std::endl;
+            std::cout << "Error: " << stbi_failure_reason() << std::endl;
             m_width = m_height = 100;
             heightData.resize(m_width * m_height, 0.0f);
             return;
         }
 
-        heightData.resize(m_width * m_height);
-        for (int i = 0; i < m_width * m_height; i++) {
-            heightData[i] = static_cast<float>(data[i]) / 255.0f;
+        std::cout << "Loaded heightmap: " << m_width << "x" << m_height 
+                  << " (" << nrChannels << " channels)" << std::endl;
+
+        // 降采样大型高度图
+        if (m_lodLevel > 1) {
+            int newWidth = m_width / m_lodLevel;
+            int newHeight = m_height / m_lodLevel;
+            
+            heightData.resize(newWidth * newHeight);
+            
+            for (int z = 0; z < newHeight; z++) {
+                for (int x = 0; x < newWidth; x++) {
+                    int srcX = x * m_lodLevel;
+                    int srcZ = z * m_lodLevel;
+                    int srcIdx = srcZ * m_width + srcX;
+                    int dstIdx = z * newWidth + x;
+                    
+                    heightData[dstIdx] = static_cast<float>(data[srcIdx]) / 255.0f;
+                }
+            }
+            
+            m_width = newWidth;
+            m_height = newHeight;
+            
+            std::cout << "Downsampled to: " << m_width << "x" << m_height 
+                      << " (LOD " << m_lodLevel << ")" << std::endl;
+        } else {
+            heightData.resize(m_width * m_height);
+            for (int i = 0; i < m_width * m_height; i++) {
+                heightData[i] = static_cast<float>(data[i]) / 255.0f;
+            }
         }
         
         stbi_image_free(data);
-        std::cout << "Loaded heightmap: " << m_width << "x" << m_height << std::endl;
+
+        for(int x=0;x<m_width;x++){
+            for(int z=m_height/2+5;z<m_height;z++){
+                int idx = z * m_width + x;
+                int stard_idx = (m_height/2) * m_width + x;
+                float t = std::clamp((z-m_height/2.0f) / maxDistance, 0.0f, 1.0f);
+                t = t*t*(3-2*t); // smoothstep
+                heightData[idx] = heightData[idx]*0.2 + heightData[stard_idx] + (m_deepwaterHeight - heightData[stard_idx]) * t * 0.8;
+                // printf("x:%d z:%d h:%.3f\n", x, z, heightData[idx]);
+            }
+        }
+        
+        float minH = 1.0f, maxH = 0.0f;
+        for (float h : heightData) {
+            if (h < minH) minH = h;
+            if (h > maxH) maxH = h;
+        }
+        std::cout << "Height range: " << minH << " to " << maxH << std::endl;
     }
 
-    void GenerateMesh()
+    void GenerateMesh(vector<Texture> m_textures)
     {
         vector<Vertex> vertices;
         vector<unsigned int> indices;
+
+        int totalVertices = m_width * m_height;
+        int totalTriangles = (m_width - 1) * (m_height - 1) * 2;
+        
+        std::cout << "Generating mesh with " << totalVertices << " vertices, " 
+                  << totalTriangles << " triangles" << std::endl;
+
+        vertices.reserve(totalVertices);
+        indices.reserve(totalTriangles * 3);
 
         // 生成顶点
         for (int z = 0; z < m_height; z++) {
@@ -109,8 +179,8 @@ private:
                 
                 // 纹理坐标
                 vertex.TexCoords = glm::vec2(
-                    static_cast<float>(x) / (m_width - 1),
-                    static_cast<float>(z) / (m_height - 1)
+                    static_cast<float>(x) / (m_width - 1) * 10,
+                    static_cast<float>(z) / (m_height - 1) * 10
                 );
                 
                 // 初始化法线和切线
@@ -146,24 +216,24 @@ private:
             }
         }
 
-        // 计算法线
+        std::cout << "Calculating normals..." << std::endl;
         CalculateNormals(vertices, indices);
         
-        // 计算切线
+        std::cout << "Calculating tangents..." << std::endl;
         CalculateTangents(vertices, indices);
         
-        // 创建 Mesh 对象
+        std::cout << "Creating mesh..." << std::endl;
         m_mesh = new Mesh(vertices, indices, m_textures);
+        
+        std::cout << "Terrain mesh created successfully!" << std::endl;
     }
 
     void CalculateNormals(vector<Vertex>& vertices, const vector<unsigned int>& indices)
     {
-        // 重置所有法线
         for (auto& vertex : vertices) {
             vertex.Normal = glm::vec3(0.0f);
         }
 
-        // 累加面法线
         for (size_t i = 0; i < indices.size(); i += 3) {
             unsigned int idx0 = indices[i];
             unsigned int idx1 = indices[i + 1];
@@ -182,7 +252,6 @@ private:
             vertices[idx2].Normal += normal;
         }
 
-        // 归一化
         for (auto& vertex : vertices) {
             vertex.Normal = glm::normalize(vertex.Normal);
         }
@@ -190,13 +259,11 @@ private:
 
     void CalculateTangents(vector<Vertex>& vertices, const vector<unsigned int>& indices)
     {
-        // 重置切线和副切线
         for (auto& vertex : vertices) {
             vertex.Tangent = glm::vec3(0.0f);
             vertex.Bitangent = glm::vec3(0.0f);
         }
 
-        // 计算切线和副切线
         for (size_t i = 0; i < indices.size(); i += 3) {
             unsigned int idx0 = indices[i];
             unsigned int idx1 = indices[i + 1];
@@ -236,16 +303,13 @@ private:
             vertices[idx2].Bitangent += bitangent;
         }
 
-        // 归一化并正交化
         for (auto& vertex : vertices) {
             glm::vec3 t = vertex.Tangent;
             glm::vec3 n = vertex.Normal;
             
-            // Gram-Schmidt 正交化
             t = glm::normalize(t - n * glm::dot(n, t));
             vertex.Tangent = t;
             
-            // 计算 handedness
             if (glm::dot(glm::cross(n, t), vertex.Bitangent) < 0.0f) {
                 t = t * -1.0f;
             }

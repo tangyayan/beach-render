@@ -10,6 +10,6 @@ uniform mat4 view;
 void main()
 {
     TexCoords = aPos;//天空盒都是1和0刚好与纹理坐标对应
-    vec4 pos = projection * view *  model * vec4(aPos, 1.0);
+    vec4 pos = projection * view *  vec4(aPos, 1.0);
     gl_Position = pos.xyww;
 }

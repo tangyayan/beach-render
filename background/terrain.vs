@@ -10,12 +10,18 @@ out vec2 TexCoords;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform vec4 clipPlane;  // ✅ 裁剪平面
 
 void main()
 {
-    FragPos = vec3(model * vec4(aPos, 1.0));
+    vec4 worldPos = model * vec4(aPos, 1.0);
+    
+    // ✅ 裁剪距离(用于反射/折射)
+    gl_ClipDistance[0] = dot(worldPos, clipPlane);
+    
+    FragPos = worldPos.xyz;
     Normal = mat3(transpose(inverse(model))) * aNormal;
     TexCoords = aTexCoords;
     
-    gl_Position = projection * view * vec4(FragPos, 1.0);
+    gl_Position = projection * view * worldPos;
 }
