@@ -44,18 +44,39 @@ set(IMGUI_HEADERS
     ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.h
     ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3_loader.h
 )
+
+# 收集 background 目录中的所有源文件
+file(GLOB BACKGROUND_SOURCES 
+    "${CMAKE_SOURCE_DIR}/background/*.cpp"
+)
+
+file(GLOB BACKGROUND_HEADERS 
+    "${CMAKE_SOURCE_DIR}/background/*.h"
+)
+
+# 打印找到的文件（用于调试）
+message(STATUS "Found background sources: ${BACKGROUND_SOURCES}")
+message(STATUS "Found background headers: ${BACKGROUND_HEADERS}")
+
 # 创建可执行文件
 add_executable(${PROJECT_NAME} 
     "src/main.cpp"
+    "src/glad.c"
     ${IMGUI_SOURCES}
     ${IMGUI_HEADERS}
- "src/glad.c" "src/obj.vs" "src/obj.fs" "include/myinclude/camera.h")
+    ${BACKGROUND_SOURCES}
+    ${BACKGROUND_HEADERS}
+)
+
 # 包含目录
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${imgui_SOURCE_DIR}
     ${imgui_SOURCE_DIR}/backends
     ${CMAKE_SOURCE_DIR}/include/glm
-    include
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/myinclude
+    ${CMAKE_SOURCE_DIR}/include/stb_image
+    ${CMAKE_SOURCE_DIR}/background          # 添加 background 目录
 )
 # 链接库
 target_link_libraries(${PROJECT_NAME} PRIVATE
