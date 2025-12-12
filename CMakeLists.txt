@@ -54,9 +54,22 @@ file(GLOB BACKGROUND_HEADERS
     "${CMAKE_SOURCE_DIR}/background/*.h"
 )
 
+# 收集 utils 目录中的所有源文件
+file(GLOB UTILS_SOURCES 
+    "${CMAKE_SOURCE_DIR}/utils/*.cpp"
+)
+
+file(GLOB UTILS_HEADERS 
+    "${CMAKE_SOURCE_DIR}/utils/*.h"
+)
+
+
 # 打印找到的文件（用于调试）
 message(STATUS "Found background sources: ${BACKGROUND_SOURCES}")
 message(STATUS "Found background headers: ${BACKGROUND_HEADERS}")
+message(STATUS "Found utils sources: ${UTILS_SOURCES}")
+message(STATUS "Found utils headers: ${UTILS_HEADERS}")
+
 
 # 创建可执行文件
 add_executable(${PROJECT_NAME} 
@@ -66,6 +79,8 @@ add_executable(${PROJECT_NAME}
     ${IMGUI_HEADERS}
     ${BACKGROUND_SOURCES}
     ${BACKGROUND_HEADERS}
+    ${UTILS_SOURCES}
+    ${UTILS_HEADERS}
 )
 
 # 包含目录
@@ -77,6 +92,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include/myinclude
     ${CMAKE_SOURCE_DIR}/include/stb_image
     ${CMAKE_SOURCE_DIR}/background          # 添加 background 目录
+    ${CMAKE_SOURCE_DIR}/utils               # 添加 utils 目录
 )
 # 链接库
 target_link_libraries(${PROJECT_NAME} PRIVATE

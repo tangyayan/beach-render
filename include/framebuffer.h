@@ -28,6 +28,8 @@ public:
 
     unsigned int GetTexture() const { return m_texture; }
     unsigned int GetDepthTexture() const { return m_depthTexture; }
+    float GetWidth() const { return m_width; }
+    float GetHeight() const { return m_height; }
 
     void Resize(int width, int height) {
         if (width == m_width && height == m_height) return;

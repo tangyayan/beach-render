@@ -56,7 +56,12 @@ public:
         }
     }
 
-    void Draw(Light &light, Camera &camera, float screenWidth, float screenHeight, float time = 0.0f)
+    void Draw(Light &light, Camera &camera, float screenWidth, float screenHeight, float time = 0.0f,
+              bool drawWater = true,
+              unsigned int reflectionTexture = 0,
+              unsigned int refractionTexture = 0,
+              unsigned int depthTexture = 0
+            ) 
     {
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 projection = glm::perspective(
@@ -80,10 +85,12 @@ public:
         
         terrain->Draw(terrainShader);
 
-        if (waterPlane) {
+        if (waterPlane && drawWater) {
             // 启用混合以支持半透明
             // glEnable(GL_BLEND);
             // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            int is_above = (camera.Position.y > waterPlane->GetHeight());
             
             waterShader.use();
             waterShader.setMat4("model", model);
@@ -96,7 +103,22 @@ public:
             waterShader.setVec3("light.specular", light.specular);
             waterShader.setFloat("time", time);
             waterShader.setVec3("waterColor", glm::vec3(0.0f, 0.5f, 0.7f));  // 蓝绿色
+            waterShader.setFloat("shininess", 32.0f);
+            waterShader.setInt("isAbove", is_above);
+            // printf("isAbove: %d\n", is_above);
             
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, reflectionTexture);
+            waterShader.setInt("reflectionTexture", 0);
+            
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, refractionTexture);
+            waterShader.setInt("refractionTexture", 1);
+            
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, depthTexture);
+            waterShader.setInt("depthTexture", 2);
+
             waterPlane->Draw(waterShader);
             
             // glDisable(GL_BLEND);

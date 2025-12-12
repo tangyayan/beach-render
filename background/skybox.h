@@ -35,7 +35,7 @@ public:
         m_ProjMatrix = p;
     }
 
-    void Render();
+    void Render(Camera *reflectionCamera = nullptr, glm::mat4* customProjMatrix = nullptr);
 
 private:
     void SetupSkyboxMesh();
@@ -143,7 +143,7 @@ bool SkyBox::Init(const string& Directory,
     return m_pCubemapTex->Load();
 }
 
-void SkyBox::Render()
+void SkyBox::Render(Camera *reflectionCamera, glm::mat4* customProjMatrix)
 {
     // 保存旧的状态
     GLint OldCullFaceMode;
@@ -161,10 +161,16 @@ void SkyBox::Render()
     // model = glm::translate(model, m_pCamera->Position); // 将天空盒移动到相机位置
     // model = glm::scale(model, glm::vec3(20.0f)); // 放大天空盒
     glm::mat4 view = glm::mat4(glm::mat3(m_pCamera->GetViewMatrix()));
+    if(reflectionCamera)
+    {
+        view = glm::mat4(glm::mat3(reflectionCamera->GetViewMatrix()));
+    }
     
     m_pSkyboxShader->setMat4("model", model);
     m_pSkyboxShader->setMat4("view", view);
-    m_pSkyboxShader->setMat4("projection", m_ProjMatrix);
+    if(customProjMatrix)
+        m_pSkyboxShader->setMat4("projection", *customProjMatrix);
+    else m_pSkyboxShader->setMat4("projection", m_ProjMatrix);
     m_pSkyboxShader->setInt("skybox", 0); // 纹理单元0
     
     // 绑定立方体贴图

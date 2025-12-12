@@ -13,7 +13,8 @@
 #include <myinclude/FileSystem.h>
 
 #include <skybox.h>
-#include <scene.h>
+#include <render.h>
+#include <framebuffer.h>
 
 #define screenWidth 800.0f
 #define screenHeight 600.0f
@@ -156,6 +157,12 @@ int main()
         FileSystem::getPath("image/sand_disp.png"),
         FileSystem::getPath("image/sand_diff.jpg")
         }, 5.0f, 1.0f, 1.0f);
+    
+    Render renderer(scene, light,
+        *(new Framebuffer(screenWidth, screenHeight, false)),
+        *(new Framebuffer(screenWidth, screenHeight, true)),
+        skybox
+    );
 
     float lastFrame = 0.0f;
     while (!glfwWindowShouldClose(window))
@@ -176,10 +183,11 @@ int main()
         lmodel = glm::rotate(lmodel, (float)glfwGetTime() * glm::radians(20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::vec3 lightPos_ = glm::vec3(lmodel * glm::vec4(lightPos, 1.0f));*/
         //用于对光源进行旋转，以实现多次渲染
-        scene.Draw(light, camera, screenWidth, screenHeight, currentFrame);
+        // scene.Draw(light, camera, screenWidth, screenHeight, currentFrame);
+        renderer.RenderFrame(camera, static_cast<float>(screenWidth), static_cast<float>(screenHeight), currentFrame);
 
-        skybox.setProjMatrix(glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f));
-        skybox.Render();
+        // skybox.setProjMatrix(glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f));
+        // skybox.Render();
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
