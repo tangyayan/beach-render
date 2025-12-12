@@ -63,6 +63,14 @@ file(GLOB UTILS_HEADERS
     "${CMAKE_SOURCE_DIR}/utils/*.h"
 )
 
+# 收集 model 目录中的所有源文件
+file(GLOB MODEL_SOURCES
+    "${CMAKE_SOURCE_DIR}/model/*.cpp"
+)
+
+file(GLOB MODEL_HEADERS
+    "${CMAKE_SOURCE_DIR}/model/*.h"
+)
 
 # 打印找到的文件（用于调试）
 message(STATUS "Found background sources: ${BACKGROUND_SOURCES}")
@@ -81,6 +89,8 @@ add_executable(${PROJECT_NAME}
     ${BACKGROUND_HEADERS}
     ${UTILS_SOURCES}
     ${UTILS_HEADERS}
+    ${MODEL_SOURCES}
+    ${MODEL_HEADERS}
 )
 
 # 包含目录
@@ -93,6 +103,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include/stb_image
     ${CMAKE_SOURCE_DIR}/background          # 添加 background 目录
     ${CMAKE_SOURCE_DIR}/utils               # 添加 utils 目录
+    ${CMAKE_SOURCE_DIR}/model               # 添加 model 目录
 )
 # 链接库
 target_link_libraries(${PROJECT_NAME} PRIVATE

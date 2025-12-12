@@ -127,13 +127,55 @@ int main()
     }
     glEnable(GL_DEPTH_TEST);
 
-    Light light{
-        // glm::vec3(1.2f, 50.0f, 100.0f),
-        glm::vec3(0.0f, -1.0f, -1.0f),
-        glm::vec3(1.0f, 1.0f, 1.0f),
+    // Light light{
+    //     // glm::vec3(1.2f, 50.0f, 100.0f),
+    //     glm::vec3(0.0f, -1.0f, -1.0f),
+    //     glm::vec3(1.0f, 1.0f, 1.0f),
+    //     glm::vec3(0.8f, 0.8f, 0.8f),
+    //     glm::vec3(1.0f, 1.0f, 1.0f)
+    // };
+    Light light(
+        DirLight{
+            glm::vec3(0.0f, -1.0f, -1.0f),
+            glm::vec3(0.5f, 0.5f, 0.5f),
+            glm::vec3(0.8f, 0.8f, 0.8f),
+            glm::vec3(0.5f, 0.5f, 0.5f)
+        },
+        *(new Shader(FileSystem::getPath("background/light.vs").c_str(),
+                     FileSystem::getPath("background/light.fs").c_str()))
+    );
+    light.AddPointLight(PointLight{
+        glm::vec3(-4.0f,  2.5f, -8.0f),
+        1.0f, 0.09f, 0.032f,
+        glm::vec3(0.2f, 0.2f, 0.2f),
         glm::vec3(0.8f, 0.8f, 0.8f),
         glm::vec3(1.0f, 1.0f, 1.0f)
-    };
+        }
+    );
+    light.AddPointLight(PointLight{
+        glm::vec3(2.0f, 3.0f, 2.0f),
+        1.0f, 0.09f, 0.032f,
+        glm::vec3(0.2f, 0.2f, 0.2f),
+        glm::vec3(0.8f, 0.8f, 0.8f),
+        glm::vec3(1.0f, 1.0f, 1.0f)
+        }
+    );
+    light.AddPointLight(PointLight{
+        glm::vec3(2.3f, 2.0f, -5.0f),
+        1.0f, 0.09f, 0.032f,
+        glm::vec3(0.2f, 0.2f, 0.2f),
+        glm::vec3(0.8f, 0.8f, 0.8f),
+        glm::vec3(1.0f, 1.0f, 1.0f)
+        }
+    );
+    light.AddPointLight(PointLight{
+        glm::vec3(0.0f,  1.5f, -3.0f),
+        1.0f, 0.09f, 0.032f,
+        glm::vec3(0.2f, 0.2f, 0.2f),
+        glm::vec3(0.8f, 0.8f, 0.8f),
+        glm::vec3(1.0f, 1.0f, 1.0f)
+        }
+    );
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);//线框模式
     bool last_blinn = false;
@@ -156,7 +198,7 @@ int main()
     Scene scene({
         FileSystem::getPath("image/sand_disp.png"),
         FileSystem::getPath("image/sand_diff.jpg")
-        }, 5.0f, 1.0f, 1.0f);
+        }, 6.0f, 1.0f, 1.0f);
     
     Render renderer(scene, light,
         *(new Framebuffer(screenWidth, screenHeight, false)),

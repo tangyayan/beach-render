@@ -57,7 +57,7 @@ public:
     }
 
     void Draw(Light &light, Camera &camera, float screenWidth, float screenHeight, float time = 0.0f,
-              bool drawWater = true,
+              glm::vec4 clipping_plane = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f),
               unsigned int reflectionTexture = 0,
               unsigned int refractionTexture = 0,
               unsigned int depthTexture = 0
@@ -77,15 +77,16 @@ public:
         terrainShader.setMat4("view", view);
         terrainShader.setMat4("projection", projection);
         terrainShader.setVec3("viewPos", camera.Position);
-        terrainShader.setVec3("light.direction", light.direction);
-        terrainShader.setVec3("light.ambient", light.ambient);
-        terrainShader.setVec3("light.diffuse", light.diffuse);
-        terrainShader.setVec3("light.specular", light.specular);
+        // terrainShader.setVec3("light.direction", light.direction);
+        // terrainShader.setVec3("light.ambient", light.ambient);
+        // terrainShader.setVec3("light.diffuse", light.diffuse);
+        // terrainShader.setVec3("light.specular", light.specular);
+        light.SetLight(terrainShader);
         terrainShader.setFloat("shininess", 32.0f);
         
         terrain->Draw(terrainShader);
 
-        if (waterPlane && drawWater) {
+        if (waterPlane) {
             // 启用混合以支持半透明
             // glEnable(GL_BLEND);
             // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -97,10 +98,11 @@ public:
             waterShader.setMat4("view", view);
             waterShader.setMat4("projection", projection);
             waterShader.setVec3("viewPos", camera.Position);
-            waterShader.setVec3("light.direction", light.direction);
-            waterShader.setVec3("light.ambient", light.ambient);
-            waterShader.setVec3("light.diffuse", light.diffuse);
-            waterShader.setVec3("light.specular", light.specular);
+            // waterShader.setVec3("light.direction", light.direction);
+            // waterShader.setVec3("light.ambient", light.ambient);
+            // waterShader.setVec3("light.diffuse", light.diffuse);
+            // waterShader.setVec3("light.specular", light.specular);
+            light.SetLight(waterShader);
             waterShader.setFloat("time", time);
             waterShader.setVec3("waterColor", glm::vec3(0.0f, 0.5f, 0.7f));  // 蓝绿色
             waterShader.setFloat("shininess", 32.0f);

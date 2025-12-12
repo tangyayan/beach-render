@@ -72,7 +72,7 @@ public:
             screenWidth,
             screenHeight,
             0.0f,
-            false  // 不渲染水面
+            glm::vec4(0.0f, -1.0f, 0.0f, waterHeight)
         );
 
         glDisable(GL_CLIP_DISTANCE0);
@@ -85,13 +85,15 @@ public:
         glClearColor(0.5f, 0.7f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glDisable(GL_CLIP_DISTANCE0);
+
         main_scene.Draw(
             main_light,
             camera,
             screenWidth,
             screenHeight,
             time,
-            true,
+            glm::vec4(0.0f, 0.0f, 0.0f, 0.0f),
             reflectionFBO.GetTexture(),      // 反射纹理
             refractionFBO.GetTexture(),      // 折射纹理
             refractionFBO.GetDepthTexture() // 深度纹理
@@ -110,6 +112,8 @@ public:
         
         // 3. 渲染主场景（包括水面）
         RenderScene(camera, screenWidth, screenHeight, time);
+
+        // main_light.Draw(camera, glm::vec4(0.0f, 1.0f, 0.0f, 1000000.0f));
     }
 };
 
