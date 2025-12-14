@@ -61,7 +61,7 @@ public:
         float waterHeight = main_scene.GetWaterPlane()->GetHeight();
         
         refractionFBO.Bind();
-        glEnable(GL_CLIP_DISTANCE0);
+        // glEnable(GL_CLIP_DISTANCE0);
 
         glClearColor(0.2f, 0.4f, 0.6f, 1.0f);  // 水下颜色
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -72,10 +72,11 @@ public:
             screenWidth,
             screenHeight,
             0.0f,
-            glm::vec4(0.0f, -1.0f, 0.0f, waterHeight)
+            glm::vec4(0.0f, -1.0f, 0.0f, waterHeight-50.0f)
         );
+        main_skybox.Render();
 
-        glDisable(GL_CLIP_DISTANCE0);
+        // glDisable(GL_CLIP_DISTANCE0);
         refractionFBO.Unbind(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
     }
     
@@ -108,7 +109,7 @@ public:
         RenderWaterReflection(camera, screenWidth, screenHeight);
         
         // 2. 渲染折射
-        // RenderWaterRefraction(camera, screenWidth, screenHeight);
+        RenderWaterRefraction(camera, screenWidth, screenHeight);
         
         // 3. 渲染主场景（包括水面）
         RenderScene(camera, screenWidth, screenHeight, time);

@@ -18,8 +18,7 @@ class OceanGerstnerFFT
 {
 private:
     int N;              // 网格分辨率 (必须是 2 的幂)
-    float Lx;            // 水面边长-x
-    float Lz;            // 水面边长-z
+    float L;            // 水面边长[-L, L]
     float A;            // Phillips 谱振幅
     glm::vec2 windDir;  // 风向
     float windSpeed;    // 风速
@@ -36,9 +35,9 @@ private:
     std::vector<glm::vec3> normals;     // 法线
 
 public:
-    OceanGerstnerFFT(int N = 256, float Lx = 1000.0f, float Lz=1000.0f, float A = 0.0005f, 
+    OceanGerstnerFFT(int N = 256, float L = 1000.0f, float A = 0.0005f, 
                      glm::vec2 windDir = glm::vec2(1.0f, 1.0f), float windSpeed = 30.0f)
-        : N(N), Lx(Lx), Lz(Lz), A(A), windDir(glm::normalize(windDir)), windSpeed(windSpeed)
+        : N(N), L(L), A(A), windDir(glm::normalize(windDir)), windSpeed(windSpeed)
     {
         h0.resize(N * N);
         h0_conj.resize(N * N);
@@ -95,8 +94,8 @@ public:
                 glm::vec2 K;
                 // K.x = (2.0f * M_PI * n) / L - M_PI;
                 // K.y = (2.0f * M_PI * m) / L - M_PI;
-                K.x = (M_PI * (n - N / 2.0f)) / Lx;
-                K.y = (2.0f * M_PI * m) / Lz;
+                K.x = (M_PI * (n - N / 2.0f)) / L;
+                K.y = (M_PI * (m - N / 2.0f)) / L;
                 
                 float Ph = Phillips(K);
                 
@@ -116,8 +115,9 @@ public:
             for (int n = 0; n < N; n++) {
                 int index = m * N + n;
                 
-                float x = (n / (float)(N - 1)) * 2.0f * Lx - Lx;
-                float z = m / float(N-1) * Lz;
+                float x = (n / (float)(N - 1)) * 2.0f * L - L;
+                // float z = m / float(N-1) * Lz;
+                float z = (m / (float)(N - 1)) * 2.0f * L - L;
                 //z (0到L) x (-L到L)
                 
                 originalPos[index] = glm::vec3(x, 0.0f, z);
@@ -134,8 +134,9 @@ public:
                 int index = m * N + n;
                 
                 glm::vec2 K;
-                K.x = (M_PI * (n - N / 2.0f)) / Lx;
-                K.y = (2.0f * M_PI * m) / Lz;
+                K.x = (M_PI * (n - N / 2.0f)) / L;
+                // K.y = (2.0f * M_PI * m) / Lz;
+                K.y = (M_PI * (m - N / 2.0f)) / L;
                 
                 float k_length = glm::length(K);
                 if (k_length < 0.0001f) {
@@ -165,8 +166,9 @@ public:
                 glm::vec2 K;
                 // K.x = (2.0f * M_PI * j) / L - M_PI;
                 // K.y = (2.0f * M_PI * i) / L - M_PI;
-                K.x = (M_PI * (j - N / 2.0f)) / Lx;
-                K.y = (2.0f * M_PI * i) / Lz;
+                K.x = (M_PI * (j - N / 2.0f)) / L;
+                // K.y = (2.0f * M_PI * i) / Lz;
+                K.y = (M_PI * (i - N / 2.0f)) / L;
                 
                 float k_length = glm::length(K);
                 if (k_length < 0.0001f) {
@@ -221,7 +223,7 @@ public:
                                        const std::vector<Complex>& water_z,
                                        const std::vector<Complex>& water_y)
     {
-        float scale = 30.0f; // 振幅缩放因子
+        float scale = 70.0f; // 振幅缩放因子
         for (int m = 0; m < N; m++) {
             for (int n = 0; n < N; n++) {
                 int index = m * N + n;
@@ -264,6 +266,11 @@ public:
                 data[m * N + n] = col[m];
             }
         }
+
+        float scale = 1.0f / (N*N);
+        for (int i = 0; i < N * N; i++) {
+            data[i] *= scale;
+        }
     }
 
     // 1D IFFT (Cooley-Tukey)
@@ -288,10 +295,10 @@ public:
             data[k + n / 2] = even[k] - t;
         }
 
-        float scale = 1.0f / 2.0f;
-        for (int k = 0; k < n; k++) {
-            data[k] *= scale;
-        }
+        // float scale = 1.0f / 2.0f;
+        // for (int k = 0; k < n; k++) {
+        //     data[k] *= scale;
+        // }
     }
 
     void CalculateNormals()

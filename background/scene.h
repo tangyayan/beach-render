@@ -93,10 +93,10 @@ public:
         
         terrain->Draw(terrainShader);
 
-        if (waterPlane) {
+        if (waterPlane && clipping_plane == glm::vec4(0.0f, 0.0f, 0.0f, 0.0f)) {
             // 启用混合以支持半透明
-            // glEnable(GL_BLEND);
-            // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             int is_above = (camera.Position.y > waterPlane->GetHeight());
             
@@ -112,7 +112,8 @@ public:
             light.SetLight(waterShader);
             // waterShader.setFloat("time", time);
             // waterShader.setVec3("waterColor", glm::vec3(0.0f, 0.5f, 0.7f));  // 蓝绿色
-            waterShader.setVec3("waterColor", glm::vec3(0.5f, 0.6f, 0.8f));  // 淡蓝色
+            // waterShader.setVec3("waterColor", glm::vec3(0.5f, 0.6f, 0.8f));  // 淡蓝色
+            // waterShader.setVec3("waterColor_diffuse", glm::vec3(0.8f, 0.9f, 1.0f));
             waterShader.setFloat("shininess", 32.0f);
             waterShader.setInt("isAbove", is_above);
             // printf("isAbove: %d\n", is_above);
@@ -131,7 +132,7 @@ public:
             
             waterPlane->Draw(waterShader, time);
             
-            // glDisable(GL_BLEND);
+            glDisable(GL_BLEND);
         }
     }
 
@@ -186,11 +187,10 @@ private:
             256,             // 空间分辨率
             32,              // 时间帧数 (32 帧)
             5.0f,            // 时间跨度 (5 秒循环)
-            terrainWidth,    // Lx
-            terrainLength,   // Lz
+            256,           // L
             0.5f,         // Phillips 谱振幅
-            glm::vec2(1.0f, 0.5f),  // 风向
-            30.0f            // 风速
+            glm::vec2(0.0f, -1.0f),  // 风向
+            15.0f            // 风速
         );
         waterPlane = new OceanBaked(
             128,

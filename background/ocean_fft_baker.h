@@ -21,7 +21,7 @@ private:
 
 public:
     OceanFFTBaker(int N, int T, float timeSpan,
-                  float Lx, float Lz, 
+                  float L,
                   float A = 0.0005f,
                   glm::vec2 windDir = glm::vec2(1.0f, 0.5f), 
                   float windSpeed = 30.0f)
@@ -31,15 +31,14 @@ public:
         std::cout << "Spatial Resolution: " << N << "x" << N << std::endl;
         std::cout << "Time Frames: " << T << std::endl;
         std::cout << "Time Span: " << timeSpan << "s" << std::endl;
-        std::cout << "Ocean Size: " << Lx << " x " << Lz << std::endl;
+        std::cout << "Ocean Size: " << L << " x " << L << std::endl;
         
         // 创建临时 FFT 对象用于烘焙
-        ocean = new OceanGerstnerFFT(N, Lx, Lz, A, windDir, windSpeed);
+        ocean = new OceanGerstnerFFT(N, L, A, windDir, windSpeed);
     
         // 计算最小波长对应的最大频率
-        float minWavelength = std::min(2.0f * Lx / N, 2.0f * Lz / N);
-        float k_max = 2.0f * M_PI / minWavelength;
-        float omega_max = std::sqrt(9.81f * k_max);
+        float k_min =  M_PI / L;
+        float omega_max = std::sqrt(9.81f * k_min);
         float minPeriod = 2.0f * M_PI / omega_max;
         
         // 让 timeSpan 是最小周期的整数倍
@@ -134,7 +133,7 @@ public:
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
         
-        // ✅ 创建 3D 法线纹理
+        // 创建 3D 法线纹理
         glGenTextures(1, &texture3D_normal);
         glBindTexture(GL_TEXTURE_3D, texture3D_normal);
         
