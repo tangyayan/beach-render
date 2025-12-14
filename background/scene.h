@@ -10,7 +10,9 @@
 #include <texture.h>
 #include <FileSystem.h>
 #include "terrain.h"
-#include "waterplane.h"  // ✅ 添加水面
+#include "waterplane.h"
+#include <ocean_fft_baker.h>
+#include <waterplane_baked.h>
 #include "light.h"
 #include "camera.h"
 
@@ -20,7 +22,9 @@ class Scene
 {
 private:
     Terrain* terrain;
-    WaterPlane* waterPlane;  // 水面对象
+    // WaterPlane* waterPlane;  // 水面对象
+    OceanBaked* waterPlane;
+    OceanFFTBaker* baker;
     Shader terrainShader;
     Shader waterShader; 
         
@@ -53,6 +57,9 @@ public:
         delete terrain;
         if (waterPlane) {
             delete waterPlane;
+        }
+        if (baker) {
+            delete baker;
         }
     }
 
@@ -103,8 +110,9 @@ public:
             // waterShader.setVec3("light.diffuse", light.diffuse);
             // waterShader.setVec3("light.specular", light.specular);
             light.SetLight(waterShader);
-            waterShader.setFloat("time", time);
-            waterShader.setVec3("waterColor", glm::vec3(0.0f, 0.5f, 0.7f));  // 蓝绿色
+            // waterShader.setFloat("time", time);
+            // waterShader.setVec3("waterColor", glm::vec3(0.0f, 0.5f, 0.7f));  // 蓝绿色
+            waterShader.setVec3("waterColor", glm::vec3(0.5f, 0.6f, 0.8f));  // 淡蓝色
             waterShader.setFloat("shininess", 32.0f);
             waterShader.setInt("isAbove", is_above);
             // printf("isAbove: %d\n", is_above);
@@ -120,8 +128,8 @@ public:
             glActiveTexture(GL_TEXTURE2);
             glBindTexture(GL_TEXTURE_2D, depthTexture);
             waterShader.setInt("depthTexture", 2);
-
-            waterPlane->Draw(waterShader);
+            
+            waterPlane->Draw(waterShader, time);
             
             // glDisable(GL_BLEND);
         }
@@ -133,7 +141,8 @@ public:
     }
 
     Terrain* GetTerrain() const { return terrain; }
-    WaterPlane* GetWaterPlane() const { return waterPlane; }
+    // WaterPlane* GetWaterPlane() const { return waterPlane; }
+    OceanBaked* GetWaterPlane() const { return waterPlane; }
 
 private:
     void InitializeScene(vector<string> ground_path)
@@ -166,12 +175,31 @@ private:
         // 创建水面 (可选: 使用纹理或纯色)
         vector<Texture> waterTextures;  // 空纹理列表,使用纯色
         
-        waterPlane = new WaterPlane(
-            terrainWidth,      // 宽度 (覆盖整个地形宽度)
-            terrainLength,     // 长度 (Z轴正方向的长度)
-            waterLevel,        // 高度 (海平面高度)
-            100,               // 网格细分 (越大波浪越平滑)
-            waterTextures      // 水面纹理
+        // waterPlane = new WaterPlane(
+        //     terrainWidth,      // 宽度 (覆盖整个地形宽度)
+        //     terrainLength,     // 长度 (Z轴正方向的长度)
+        //     waterLevel,        // 高度 (海平面高度)
+        //     100,               // 网格细分 (越大波浪越平滑)
+        //     waterTextures      // 水面纹理
+        // );
+        baker = new OceanFFTBaker(
+            256,             // 空间分辨率
+            32,              // 时间帧数 (32 帧)
+            5.0f,            // 时间跨度 (5 秒循环)
+            terrainWidth,    // Lx
+            terrainLength,   // Lz
+            0.5f,         // Phillips 谱振幅
+            glm::vec2(1.0f, 0.5f),  // 风向
+            30.0f            // 风速
+        );
+        waterPlane = new OceanBaked(
+            128,
+            terrainWidth/2,
+            terrainLength,
+            waterLevel,
+            baker->GetDisplacementTexture(),
+            baker->GetNormalTexture(),
+            baker->GetTimeSpan()
         );
         
         std::cout << "Scene initialization complete!" << std::endl;

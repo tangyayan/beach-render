@@ -136,7 +136,7 @@ int main()
     // };
     Light light(
         DirLight{
-            glm::vec3(0.0f, -1.0f, -1.0f),
+            glm::vec3(-0.3f, -0.7f, -0.5f),
             glm::vec3(0.5f, 0.5f, 0.5f),
             glm::vec3(0.8f, 0.8f, 0.8f),
             glm::vec3(0.5f, 0.5f, 0.5f)
@@ -205,6 +205,14 @@ int main()
         *(new Framebuffer(screenWidth, screenHeight, true)),
         skybox
     );
+
+    // // main.cpp
+    // OceanGerstnerFFT ocean(64, 500.0f, 500.0f, 0.0005f, glm::vec2(1.0f, 0.5f), 30.0f);
+
+    // // 测试几个时间点
+    // ocean.DebugOutput(0.0f);
+    // ocean.DebugOutput(1.0f);
+    // ocean.DebugOutput(2.0f);
 
     float lastFrame = 0.0f;
     while (!glfwWindowShouldClose(window))

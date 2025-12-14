@@ -36,10 +36,6 @@ uniform vec3 waterColor;
 uniform int isAbove;
 uniform float shininess;
 
-// 函数声明
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
-
 void main()
 {
     vec2 ndc = glp.xy / glp.w;
@@ -57,16 +53,18 @@ void main()
     vec3 viewDir = normalize(viewPos - FragPos);
     
     // 方向光
-    vec3 result = CalcDirLight(dirLight, norm, viewDir);
+    vec3 lightDir = normalize(-dirLight.direction);
     
-    // 点光源
-    for(int i = 0; i < NR_POINT_LIGHTS; i++)
-        result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);
+    // 漫反射
+    float diff = max(dot(norm, lightDir), 0.0);
     
-    // 分离 ambient, diffuse, specular
+    // 镜面反射
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    
     vec3 ambient = dirLight.ambient * waterColor;
-    for(int i = 0; i < NR_POINT_LIGHTS; i++)
-        ambient += pointLights[i].ambient * waterColor;
+    vec3 diffuse = dirLight.diffuse * diff * waterColor;
+    vec3 specular = dirLight.specular * spec * vec3(0.5);
     
     vec4 blueColor = vec4(0.0, 0.25, 1.0, 1.0);
     float cosFres = dot(viewDir, norm);
@@ -76,59 +74,14 @@ void main()
         float fresnel = 1.0 - cosFres;
         fresnel = pow(clamp(fresnel, 0.0, 1.0), 3.0);
         
-        reflectColor.rgb = reflectColor.rgb * result;
-        FragColor = mix(vec4(waterColor * result, 1.0), reflectColor, fresnel);
+        reflectColor.rgb = reflectColor.rgb * (ambient + diffuse) + 0.75 * specular;
+        // FragColor = reflectColor * fresnel;
+        FragColor = vec4(ambient + diffuse + specular, 1.0);
+        // FragColor = mix(vec4(waterColor * result, 1.0), reflectColor, fresnel);
     } else {
         // 水面下方：蓝色调 + 折射
+        vec3 result = ambient + diffuse + specular;
         vec4 mixColor = 0.5 * blueColor + 0.6 * refractColor;
         FragColor = vec4(mixColor.rgb * result, 1.0);
     }
-}
-
-// 计算方向光
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
-{
-    vec3 lightDir = normalize(-light.direction);
-    
-    // 漫反射
-    float diff = max(dot(normal, lightDir), 0.0);
-    
-    // 镜面反射
-    vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-    
-    // 合并结果
-    vec3 ambient = light.ambient * waterColor;
-    vec3 diffuse = light.diffuse * diff * waterColor;
-    vec3 specular = light.specular * spec * vec3(0.5);
-    
-    return (ambient + diffuse + specular);
-}
-
-// 计算点光源
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
-{
-    vec3 lightDir = normalize(light.position - fragPos);
-    
-    // 漫反射
-    float diff = max(dot(normal, lightDir), 0.0);
-    
-    // 镜面反射
-    vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-    
-    // 衰减
-    float distance = length(light.position - fragPos);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
-    
-    // 合并结果
-    vec3 ambient = light.ambient * waterColor;
-    vec3 diffuse = light.diffuse * diff * waterColor;
-    vec3 specular = light.specular * spec * vec3(0.5);
-    
-    ambient *= attenuation;
-    diffuse *= attenuation;
-    specular *= attenuation;
-    
-    return (ambient + diffuse + specular);
 }
