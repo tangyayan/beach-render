@@ -30,6 +30,9 @@ private:
     std::vector<Complex> waves_z;      // z 方向位移频谱
     std::vector<Complex> waves_y;      // y 方向(高度)位移频谱
     
+    std::vector<Complex> slopes_x;    // x 方向坡度频谱
+    std::vector<Complex> slopes_z;    // z 方向坡度频谱
+
     std::vector<glm::vec3> originalPos; // 原始网格位置
     std::vector<glm::vec3> vertices;    // 最终顶点位置
     std::vector<glm::vec3> normals;     // 法线
@@ -48,6 +51,8 @@ public:
         originalPos.resize(N * N);
         vertices.resize(N * N);
         normals.resize(N * N);
+        slopes_x.resize(N * N);
+        slopes_z.resize(N * N);
         
         InitializeSpectrum();
         InitializeOriginalPositions();
@@ -68,6 +73,7 @@ public:
         float k_length4 = k_length2 * k_length2;
         
         float k_dot_w = glm::dot(glm::normalize(K), windDir);
+        if (k_dot_w <= 0.0f) return 0.0f;
         float k_dot_w2 = k_dot_w * k_dot_w;
         
         float L_ = windSpeed * windSpeed / 9.81f;
@@ -118,7 +124,6 @@ public:
                 float x = (n / (float)(N - 1)) * 2.0f * L - L;
                 // float z = m / float(N-1) * Lz;
                 float z = (m / (float)(N - 1)) * 2.0f * L - L;
-                //z (0到L) x (-L到L)
                 
                 originalPos[index] = glm::vec3(x, 0.0f, z);
             }
@@ -128,100 +133,153 @@ public:
     // 核心方法: 计算 Gerstner 波的位移
     void EvaluateGerstnerWaves(float time)
     {
-        // 第一步: 计算 waves[i] = h_tilde(k, t)
+        // 计算 waves[i] = h_tilde(k, t)
+        // for (int m = 0; m < N; m++) {
+        //     for (int n = 0; n < N; n++) {
+        //         int index = m * N + n;
+                
+        //         glm::vec2 K;
+        //         K.x = (M_PI * (n - N / 2.0f)) / L;
+        //         // K.y = (2.0f * M_PI * m) / Lz;
+        //         K.y = (M_PI * (m - N / 2.0f)) / L;
+                
+        //         float k_length = glm::length(K);
+        //         if (k_length < 0.0001f) {
+        //             waves[index] = Complex(0.0f, 0.0f);
+        //             continue;
+        //         }
+                
+        //         // omega = sqrt(g * k)
+        //         float omega = std::sqrt(9.81f * k_length);
+                
+        //         // phase = omega * time
+        //         float phase = omega * time;
+        //         Complex phase_complex(std::cos(phase), std::sin(phase));
+                
+        //         int conj_index = ((N - m) % N) * N + ((N - n) % N);
+                
+        //         waves[index] = h0[index] * phase_complex 
+        //                      + std::conj(h0_conj[conj_index]) * std::conj(phase_complex);
+        //     }
+        // }
+        
+        // 计算 x, z, y 方向的位移频谱
+        // for (int i = 0; i <= N / 2; i++) {
+        //     for (int j = 0; j < N; j++) {
+        //         int index = i * N + j;
+                
+        //         glm::vec2 K;
+        //         // K.x = (2.0f * M_PI * j) / L - M_PI;
+        //         // K.y = (2.0f * M_PI * i) / L - M_PI;
+        //         K.x = (M_PI * (j - N / 2.0f)) / L;
+        //         // K.y = (2.0f * M_PI * i) / Lz;
+        //         K.y = (M_PI * (i - N / 2.0f)) / L;
+                
+        //         float k_length = glm::length(K);
+        //         if (k_length < 0.0001f) {
+        //             waves_x[index] = Complex(0.0f, 0.0f);
+        //             waves_z[index] = Complex(0.0f, 0.0f);
+        //             waves_y[index] = Complex(0.0f, 0.0f);
+        //             continue;
+        //         }
+                
+        //         Complex p = waves[index];
+                
+        //         // 水平位移 x: waves_x[i] = -i * p = complex(-p.im, p.re)
+        //         waves_x[index] = Complex(-p.imag(), p.real()) * (K.x / k_length);
+                
+        //         // 水平位移 z: waves_z[i] = -i * p
+        //         waves_z[index] = Complex(-p.imag(), p.real()) * (K.y / k_length);
+                
+        //         // 垂直位移 y: waves_y[i] = p
+        //         waves_y[index] = p;
+                
+        //         // 处理共轭部分
+        //         int j_conj = (N - i) % N;
+        //         int k_conj = (N - j) % N;
+        //         int conj_index = j_conj * N + k_conj;
+                
+        //         if (conj_index != index && i <= N / 2) {
+        //             Complex q = waves[conj_index];
+                    
+        //             // waves_x[j] = i * q = complex(q.im, -q.re)
+        //             waves_x[conj_index] = Complex(q.imag(), -q.real()) * (K.x / k_length);
+        //             waves_z[conj_index] = Complex(q.imag(), -q.real()) * (K.y / k_length);
+        //             waves_y[conj_index] = q;
+        //         }
+        //     }
+        // }
         for (int m = 0; m < N; m++) {
             for (int n = 0; n < N; n++) {
                 int index = m * N + n;
                 
                 glm::vec2 K;
                 K.x = (M_PI * (n - N / 2.0f)) / L;
-                // K.y = (2.0f * M_PI * m) / Lz;
                 K.y = (M_PI * (m - N / 2.0f)) / L;
                 
                 float k_length = glm::length(K);
                 if (k_length < 0.0001f) {
                     waves[index] = Complex(0.0f, 0.0f);
-                    continue;
-                }
-                
-                // omega = sqrt(g * k)
-                float omega = std::sqrt(9.81f * k_length);
-                
-                // phase = omega * time
-                float phase = omega * time;
-                Complex phase_complex(std::cos(phase), std::sin(phase));
-                
-                int conj_index = ((N - m) % N) * N + ((N - n) % N);
-                
-                waves[index] = h0[index] * phase_complex 
-                             + std::conj(h0_conj[conj_index]) * std::conj(phase_complex);
-            }
-        }
-        
-        // 第二步: 计算 x, z, y 方向的位移频谱
-        for (int i = 0; i <= N / 2; i++) {
-            for (int j = 0; j < N; j++) {
-                int index = i * N + j;
-                
-                glm::vec2 K;
-                // K.x = (2.0f * M_PI * j) / L - M_PI;
-                // K.y = (2.0f * M_PI * i) / L - M_PI;
-                K.x = (M_PI * (j - N / 2.0f)) / L;
-                // K.y = (2.0f * M_PI * i) / Lz;
-                K.y = (M_PI * (i - N / 2.0f)) / L;
-                
-                float k_length = glm::length(K);
-                if (k_length < 0.0001f) {
                     waves_x[index] = Complex(0.0f, 0.0f);
                     waves_z[index] = Complex(0.0f, 0.0f);
                     waves_y[index] = Complex(0.0f, 0.0f);
+                    slopes_x[index] = Complex(0.0f, 0.0f);
+                    slopes_z[index] = Complex(0.0f, 0.0f);
                     continue;
                 }
                 
-                Complex p = waves[index];
+                // 时间演化
+                float omega = std::sqrt(9.81f * k_length);
+                float phase = omega * time;
+                Complex phase_exp(std::cos(phase), std::sin(phase));
                 
-                // 水平位移 x: waves_x[i] = -i * p = complex(-p.im, p.re)
-                waves_x[index] = Complex(-p.imag(), p.real()) * (K.x / k_length);
+                int m_conj = (N - m) % N;
+                int n_conj = (N - n) % N;
+                int conj_index = m_conj * N + n_conj;
                 
-                // 水平位移 z: waves_z[i] = -i * p
-                waves_z[index] = Complex(-p.imag(), p.real()) * (K.y / k_length);
+                // h̃(k, t)
+                waves[index] = h0[index] * phase_exp 
+                             + std::conj(h0[conj_index]) * std::conj(phase_exp);
                 
-                // 垂直位移 y: waves_y[i] = p
-                waves_y[index] = p;
+                // 位移频谱: D = -i * (k/|k|) * h̃
+                Complex i_unit(0.0f, 1.0f);
+                glm::vec2 k_norm = K / k_length;
                 
-                // 处理共轭部分
-                int j_conj = (N - i) % N;
-                int k_conj = (N - j) % N;
-                int conj_index = j_conj * N + k_conj;
+                waves_x[index] = -i_unit * k_norm.x * waves[index];
+                waves_z[index] = -i_unit * k_norm.y * waves[index];
+                waves_y[index] = waves[index];
                 
-                if (conj_index != index && i <= N / 2) {
-                    Complex q = waves[conj_index];
-                    
-                    // waves_x[j] = i * q = complex(q.im, -q.re)
-                    waves_x[conj_index] = Complex(q.imag(), -q.real()) * (K.x / k_length);
-                    waves_z[conj_index] = Complex(q.imag(), -q.real()) * (K.y / k_length);
-                    waves_y[conj_index] = q;
-                }
+                // 斜率频谱: S = i * k * h̃
+                // ∂h/∂x ←→ i·k_x·h̃
+                slopes_x[index] = i_unit * K.x * waves[index];
+                // ∂h/∂z ←→ i·k_z·h̃
+                slopes_z[index] = i_unit * K.y * waves[index];
             }
         }
         
-        // 第三步: 执行 IFFT
+        // 执行 IFFT
         std::vector<Complex> water_x = waves_x;
         std::vector<Complex> water_z = waves_z;
         std::vector<Complex> water_y = waves_y;
+        std::vector<Complex> slope_x = slopes_x;
+        std::vector<Complex> slope_z = slopes_z;
         
         IFFT2D(water_x);
         IFFT2D(water_z);
         IFFT2D(water_y);
+        IFFT2D(slope_x);
+        IFFT2D(slope_z);
         
         // 第四步: 更新顶点位置
-        UpdateVerticesFromDisplacement(water_x, water_z, water_y);
+        UpdateVerticesFromDisplacement(water_x, water_z, water_y, slope_x, slope_z);
     }
 
     // 从位移更新顶点
     void UpdateVerticesFromDisplacement(const std::vector<Complex>& water_x,
                                        const std::vector<Complex>& water_z,
-                                       const std::vector<Complex>& water_y)
+                                       const std::vector<Complex>& water_y,
+                                       const std::vector<Complex>& slope_x,
+                                       const std::vector<Complex>& slope_z)
     {
         float scale = 70.0f; // 振幅缩放因子
         for (int m = 0; m < N; m++) {
@@ -234,10 +292,23 @@ public:
                 float dz = water_z[index].real();
                 
                 vertices[index] = originalPos[index] + glm::vec3(dx, dy, dz);
+
+                // N = (-∂h/∂x, 1, -∂h/∂z)
+                float dh_dx = slope_x[index].real() * scale;  // 应用相同缩放
+                float dh_dz = slope_z[index].real() * scale;
+                
+                glm::vec3 normal(-dh_dx, 1.0f, -dh_dz);
+                
+                // 归一化
+                normals[index] = glm::normalize(normal);
+                
+                if (normals[index].y < 0.0f) {
+                    normals[index] = -normals[index];
+                }
             }
         }
         
-        CalculateNormals();
+        // CalculateNormals();
     }
 
     // 2D IFFT
@@ -301,24 +372,30 @@ public:
         // }
     }
 
-    void CalculateNormals()
-    {
-        for (int m = 0; m < N; m++) {
-            for (int n = 0; n < N; n++) {
-                int index = m * N + n;
+    // void CalculateNormals()
+    // {
+    //     for (int m = 0; m < N; m++) {
+    //         for (int n = 0; n < N; n++) {
+    //             int index = m * N + n;
                 
-                int left = m * N + (n - 1 + N) % N;
-                int right = m * N + (n + 1) % N;
-                int down = ((m - 1 + N) % N) * N + n;
-                int up = ((m + 1) % N) * N + n;
+    //             int left = m * N + (n - 1 + N) % N;
+    //             int right = m * N + (n + 1) % N;
+    //             int down = ((m - 1 + N) % N) * N + n;
+    //             int up = ((m + 1) % N) * N + n;
                 
-                glm::vec3 tangent = vertices[right] - vertices[left];
-                glm::vec3 bitangent = vertices[up] - vertices[down];
+    //             glm::vec3 tangent = vertices[right] - vertices[left];
+    //             glm::vec3 bitangent = vertices[up] - vertices[down];
                 
-                normals[index] = glm::normalize(glm::cross(tangent, bitangent));
-            }
-        }
-    }
+    //             glm::vec3 normal = glm::cross(tangent, bitangent);
+                
+    //             if (normal.y < 0.0f) {
+    //                 normal = -normal;
+    //             }
+                
+    //             normals[index] = glm::normalize(normal);
+    //         }
+    //     }
+    // }
 
     void Update(float time)
     {
