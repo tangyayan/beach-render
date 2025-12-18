@@ -102,6 +102,22 @@ public:
         bool isabove = (camera.Position.y > main_scene.GetWaterPlane()->GetHeight());
         main_skybox.Render(nullptr,nullptr,isabove);
     }
+
+    void Drawobject(Camera& camera, Shader& shader, glm::mat4 model, float screenWidth, float screenHeight)
+    {
+        glm::mat4 view = camera.GetViewMatrix();
+        glm::mat4 projection = glm::perspective(
+            glm::radians(camera.Zoom), 
+            screenWidth / screenHeight, 
+            0.1f, 
+            10000.0f
+        );
+
+        shader.use();
+        shader.setMat4("model", model);
+        shader.setMat4("view", view);
+        shader.setMat4("projection", projection);
+    }
     
     // 完整渲染一帧
     void RenderFrame(Camera& camera, float screenWidth, float screenHeight, float time = 0.0f)

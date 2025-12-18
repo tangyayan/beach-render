@@ -67,7 +67,7 @@ public:
     float Phillips(glm::vec2 K)
     {
         float k_length = glm::length(K);
-        if (k_length < 0.000001f) return 0.0f;
+        if (k_length < 0.0001f) return 0.0f;
         
         float k_length2 = k_length * k_length;
         float k_length4 = k_length2 * k_length2;

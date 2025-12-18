@@ -7,6 +7,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
+if (MSVC)
+    add_compile_options("/utf-8")
+endif()
 # 设置输出目录
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -26,6 +29,25 @@ FetchContent_Declare(
     URL https://github.com/ocornut/imgui/archive/refs/tags/v1.90.4.zip
 )
 FetchContent_MakeAvailable(imgui)
+# 下载并配置 Assimp
+FetchContent_Declare(
+    assimp
+    GIT_REPOSITORY https://github.com/assimp/assimp.git
+    GIT_TAG v5.3.1  # 使用稳定版本
+)
+# Assimp 编译选项（减少不需要的功能以加快编译）
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
+# 只启用需要的格式（加快编译速度）
+set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_FBX_IMPORTER ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_COLLADA_IMPORTER ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(assimp)
 # 添加 ImGui 源文件
 set(IMGUI_SOURCES
     ${imgui_SOURCE_DIR}/imgui.cpp
@@ -104,16 +126,25 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/background          # 添加 background 目录
     ${CMAKE_SOURCE_DIR}/utils               # 添加 utils 目录
     ${CMAKE_SOURCE_DIR}/model               # 添加 model 目录
+    ${assimp_SOURCE_DIR}/include            # Assimp 源码头文件
+    ${assimp_BINARY_DIR}/include            # Assimp 生成的头文件
 )
 # 链接库
 target_link_libraries(${PROJECT_NAME} PRIVATE
     OpenGL::GL
     glfw
+    assimp  # 链接 Assimp
 )
 # 在 Windows 上链接额外的库
 if (WIN32)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         opengl32.lib
+    )
+    # 复制 Assimp DLL
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:assimp>
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
     )
 endif()
 # 设置编译定义
