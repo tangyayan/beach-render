@@ -134,12 +134,13 @@ private:
         stbi_image_free(data);
 
         for(int x=0;x<m_width;x++){
-            for(int z=m_height/2+5;z<m_height;z++){
+            for(int z=m_height/2+3;z<m_height;z++){
                 int idx = z * m_width + x;
                 int stard_idx = (m_height/2) * m_width + x;
                 float t = std::clamp((z-m_height/2.0f) / maxDistance, 0.0f, 1.0f);
                 t = t*t*(3-2*t); // smoothstep
                 heightData[idx] = heightData[idx]*0.2 + heightData[stard_idx] + (m_deepwaterHeight - heightData[stard_idx]) * t * 0.8;
+                heightData[idx] *= 0.5f;
                 // printf("x:%d z:%d h:%.3f\n", x, z, heightData[idx]);
             }
         }

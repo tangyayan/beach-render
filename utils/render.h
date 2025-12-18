@@ -49,7 +49,7 @@ public:
         glClearColor(0.5f, 0.7f, 0.9f, 1.0f);  // 天空颜色
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        main_skybox.Render(&reflectCamera, &projMatrix);
+        main_skybox.Render(&reflectCamera, &projMatrix, 1);
 
         // glDisable(GL_CLIP_DISTANCE0);
         reflectionFBO.Unbind(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
@@ -74,7 +74,7 @@ public:
             0.0f,
             glm::vec4(0.0f, -1.0f, 0.0f, waterHeight-50.0f)
         );
-        main_skybox.Render();
+        main_skybox.Render(nullptr,nullptr,1);
 
         // glDisable(GL_CLIP_DISTANCE0);
         refractionFBO.Unbind(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
@@ -99,7 +99,8 @@ public:
             refractionFBO.GetTexture(),      // 折射纹理
             refractionFBO.GetDepthTexture() // 深度纹理
         );
-        main_skybox.Render();
+        bool isabove = (camera.Position.y > main_scene.GetWaterPlane()->GetHeight());
+        main_skybox.Render(nullptr,nullptr,isabove);
     }
     
     // 完整渲染一帧

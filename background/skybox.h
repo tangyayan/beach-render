@@ -35,7 +35,7 @@ public:
         m_ProjMatrix = p;
     }
 
-    void Render(Camera *reflectionCamera = nullptr, glm::mat4* customProjMatrix = nullptr);
+    void Render(Camera *reflectionCamera = nullptr, glm::mat4* customProjMatrix = nullptr, int isabove = 1);
 
 private:
     void SetupSkyboxMesh();
@@ -143,7 +143,7 @@ bool SkyBox::Init(const string& Directory,
     return m_pCubemapTex->Load();
 }
 
-void SkyBox::Render(Camera *reflectionCamera, glm::mat4* customProjMatrix)
+void SkyBox::Render(Camera *reflectionCamera, glm::mat4* customProjMatrix, int isabove)
 {
     // 保存旧的状态
     GLint OldCullFaceMode;
@@ -172,6 +172,7 @@ void SkyBox::Render(Camera *reflectionCamera, glm::mat4* customProjMatrix)
         m_pSkyboxShader->setMat4("projection", *customProjMatrix);
     else m_pSkyboxShader->setMat4("projection", m_ProjMatrix);
     m_pSkyboxShader->setInt("skybox", 0); // 纹理单元0
+    m_pSkyboxShader->setInt("isAbove", isabove);
     
     // 绑定立方体贴图
     m_pCubemapTex->Bind(GL_TEXTURE0);

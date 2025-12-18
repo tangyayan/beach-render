@@ -95,7 +95,7 @@ void main()
         float depthFactor = 1.0 - exp(-depth * 0.05);  // 指数衰减
         vec3 waterDepthColor = mix(shallowColor, deepColor, depthFactor);
         // 3. 计算透明度(深度越深越不透明)
-        float waterAlpha = clamp(depth * 0.03, 0.2, 0.95);  // 0.2~0.95
+        float waterAlpha = clamp(depth * 0.03, 0.4, 0.95);  // 0.4~0.95
         // 4. 混合折射和深度颜色
         vec3 refraction = mix(refractColor.rgb, waterDepthColor, depthFactor * 0.7);
         
@@ -117,18 +117,8 @@ void main()
         // FragColor = mix(vec4(waterColor, 1.0), reflectColor, fresnel);
     } else {
         // 水面下方：蓝色调 + 折射
-        // 水下雾颜色
-        vec3 underwaterColor = vec3(0.0, 0.3, 0.6);
-        
-        // 计算雾的强度(距离越远越浓)
-        float fogFactor = 1.0 - exp(-depth * 0.1);
-        
-        // 混合折射颜色和雾颜色
-        vec3 foggedColor = mix(refractColor.rgb, underwaterColor, fogFactor);
-        
-        // 应用光照
-        vec3 result = foggedColor * (ambient + diffuse + specular * 0.3);
-        
-        FragColor = vec4(result, 1.0);
+        // FragColor = vec4(finalColor, 1.0);
+        vec4 mixColor = (0.5 * blueColor) + (0.6 * refractColor);
+		FragColor = vec4((mixColor.xyz * (ambient + diffuse) + 0.75*specular), 1.0);
     }
 }

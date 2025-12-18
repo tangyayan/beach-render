@@ -78,6 +78,8 @@ public:
             10000.0f
         );
 
+        int is_above = (camera.Position.y > waterPlane->GetHeight());
+
         terrainShader.use();
         glm::mat4 model = glm::mat4(1.0f);
         terrainShader.setMat4("model", model);
@@ -90,6 +92,7 @@ public:
         // terrainShader.setVec3("light.specular", light.specular);
         light.SetLight(terrainShader);
         terrainShader.setFloat("shininess", 32.0f);
+        terrainShader.setInt("isAbove", is_above);
         
         terrain->Draw(terrainShader);
 
@@ -97,8 +100,6 @@ public:
             // 启用混合以支持半透明
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-            int is_above = (camera.Position.y > waterPlane->GetHeight());
             
             waterShader.use();
             waterShader.setMat4("model", model);
@@ -190,7 +191,7 @@ private:
             256,           // L
             0.5f,         // Phillips 谱振幅
             glm::vec2(0.0f, -1.0f),  // 风向
-            15.0f            // 风速
+            30.0f            // 风速
         );
         waterPlane = new OceanBaked(
             128,

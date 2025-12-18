@@ -126,6 +126,7 @@ int main()
         return -1;
     }
     glEnable(GL_DEPTH_TEST);
+    // glEnable(GL_FRAMEBUFFER_SRGB);
 
     // Light light{
     //     // glm::vec3(1.2f, 50.0f, 100.0f),
@@ -136,8 +137,8 @@ int main()
     // };
     Light light(
         DirLight{
-            glm::vec3(-0.3f, -0.7f, -0.5f),
-            glm::vec3(0.5f, 0.5f, 0.5f),
+            glm::vec3(0.0f, -0.9f, -0.4f),
+            glm::vec3(0.2f, 0.2f, 0.2f),
             glm::vec3(0.8f, 0.8f, 0.8f),
             glm::vec3(0.5f, 0.5f, 0.5f)
         },
@@ -153,7 +154,7 @@ int main()
         }
     );
     light.AddPointLight(PointLight{
-        glm::vec3(2.0f, 3.0f, 2.0f),
+        glm::vec3(2.0f, 40.0f, 10.0f),
         1.0f, 0.09f, 0.032f,
         glm::vec3(0.2f, 0.2f, 0.2f),
         glm::vec3(0.8f, 0.8f, 0.8f),

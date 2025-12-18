@@ -31,6 +31,8 @@ uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform sampler2D texture_diffuse1;
 uniform float shininess;
 
+uniform int isAbove;
+
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
 {
     vec3 lightDir = normalize(-light.direction);
@@ -89,6 +91,13 @@ void main()
     vec3 result = ambient + diffuse + specular;
     FragColor = vec4(result, 1.0);*/
     
+    // 雾效
+    vec4 fogColor = vec4(0.0, 0.0, 0.2, 1.0);
+	float fogStart = 10.0;
+	float fogEnd = 200.0;
+	float dist = length(viewPos - FragPos);
+	float fogFactor = clamp(((fogEnd-dist) / (fogEnd-fogStart)), 0.0, 1.0);
+
     vec3 norm = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
     // phase 1: directional lighting
@@ -97,4 +106,7 @@ void main()
     for(int i = 0; i < NR_POINT_LIGHTS; i++)
         result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);
     FragColor = vec4(result, 1.0);
+
+    if(isAbove == 0)
+        FragColor = mix(fogColor, FragColor, fogFactor);
 }
