@@ -16,7 +16,7 @@
 #include <render.h>
 #include <framebuffer.h>
 
-#include <model.h>
+#include <gameobject.h>
 
 #define screenWidth 800.0f
 #define screenHeight 600.0f
@@ -209,9 +209,13 @@ int main()
         skybox
     );
 
-    Model ourModel(FileSystem::getPath("model/coconut_palm.glb"));
-    Shader modelShader(FileSystem::getPath("model/model_loading.vs").c_str(),
-                      FileSystem::getPath("model/model_loading.fs").c_str());
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, -0.3f)); // translate it down so it's at the center of the scene
+    model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));	// it's a bit too big for our scene, so scale it down
+    GameObject coconut(FileSystem::getPath("model/coconut_palm.glb"), model);
+    
+    // Shader modelShader(FileSystem::getPath("model/model_loading.vs").c_str(),
+                    //   FileSystem::getPath("model/model_loading.fs").c_str());
 
     float lastFrame = 0.0f;
     while (!glfwWindowShouldClose(window))
@@ -235,16 +239,9 @@ int main()
         // scene.Draw(light, camera, screenWidth, screenHeight, currentFrame);
         renderer.RenderFrame(camera, static_cast<float>(screenWidth), static_cast<float>(screenHeight), currentFrame);
 
-        modelShader.use();
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 10000.0f);
-        glm::mat4 view = camera.GetViewMatrix();
-        modelShader.setMat4("projection", projection);
-        modelShader.setMat4("view", view);
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, -0.3f)); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));	// it's a bit too big for our scene, so scale it down
-        modelShader.setMat4("model", model);
-        ourModel.Draw(modelShader);
+        // glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 10000.0f);
+        // glm::mat4 view = camera.GetViewMatrix();
+        // coconut.Draw(modelShader, projection, view);
 
         // skybox.setProjMatrix(glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f));
         // skybox.Render();

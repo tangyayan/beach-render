@@ -12,6 +12,9 @@
 #include <vector>
 #include <framebuffer.h>
 #include <skybox.h>
+#include <shadowmap.h>
+#include <shader.h>
+#include <gameobject.h>
 
 class Render
 {
@@ -21,16 +24,51 @@ private:
     Framebuffer& reflectionFBO;
     Framebuffer& refractionFBO;
     SkyBox& main_skybox;
+    ShadowMap shadowMap;
+
+    Shader model_loadingShader;
+    Shader shadowShader;
     
     float moveFactor = 0.0f;  // 波纹动画因子
 
 public:
-    Render(Scene& main_scene, Light& main_light, Framebuffer& reflectionFBO, Framebuffer& waterfb, SkyBox& main_skybox)
-        : main_scene(main_scene), main_light(main_light),main_skybox(main_skybox),
-          reflectionFBO(reflectionFBO), refractionFBO(waterfb)
+    Render(Scene& main_scene, Light& main_light, Framebuffer& reflectionFBO, 
+        Framebuffer& waterfb, SkyBox& main_skybox)
+    :   main_scene(main_scene), main_light(main_light), main_skybox(main_skybox),
+        reflectionFBO(reflectionFBO), refractionFBO(waterfb),
+        shadowMap(4096, 4096),  
+        shadowShader(FileSystem::getPath("src/simpleDepthShader.vs").c_str(),
+                    FileSystem::getPath("src/simpleDepthShader.fs").c_str()),
+        model_loadingShader(FileSystem::getPath("model/model_loading.vs").c_str(),
+                            FileSystem::getPath("model/model_loading.fs").c_str())
     {
     }
     
+    // 渲染阴影贴图
+    void RenderShadowMap(Camera& camera, float screenWidth, float screenHeight)
+    {
+        glm::mat4 lightSpaceMatrix = main_light.GetLightSpaceMatrix();
+        
+        shadowShader.use();
+        shadowShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+        shadowMap.Bind();
+        glCullFace(GL_FRONT);  // Peter Panning 修复
+
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 10000.0f);
+        glm::mat4 view = camera.GetViewMatrix();
+        
+        // 渲染所有物体到阴影贴图
+        auto itr = GameObject::gameObjList.begin();
+        for (int i = 0; i < GameObject::gameObjList.size(); i++, ++itr)
+        {
+            (*itr)->Draw(shadowShader,projection,view);
+        }
+        
+        glCullFace(GL_BACK);
+        shadowMap.Unbind(static_cast<int>(screenWidth), static_cast<int>(screenHeight));  // 恢复到屏幕尺寸
+    }
+
     // 渲染反射场景
     void RenderWaterReflection(Camera& camera, float screenWidth, float screenHeight)
     {
@@ -82,7 +120,9 @@ public:
     
     // 渲染完整场景（地形 + 水面）
     void RenderScene(Camera& camera, float screenWidth, float screenHeight, float time = 0.0f)
-    {   
+    {
+        RenderShadowMap(camera, screenWidth, screenHeight);
+
         glClearColor(0.5f, 0.7f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -97,26 +137,21 @@ public:
             glm::vec4(0.0f, 0.0f, 0.0f, 0.0f),
             reflectionFBO.GetTexture(),      // 反射纹理
             refractionFBO.GetTexture(),      // 折射纹理
-            refractionFBO.GetDepthTexture() // 深度纹理
+            refractionFBO.GetDepthTexture(), // 深度纹理
+            shadowMap.GetDepthMap(),         // 阴影贴图
+            main_light.GetLightSpaceMatrix()
         );
+        
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 10000.0f);
+        glm::mat4 view = camera.GetViewMatrix();
+        auto itr = GameObject::gameObjList.begin();
+        for (int i = 0; i < GameObject::gameObjList.size(); i++, ++itr)
+        {
+            (*itr)->Draw(model_loadingShader, projection, view);
+        }
+
         bool isabove = (camera.Position.y > main_scene.GetWaterPlane()->GetHeight());
         main_skybox.Render(nullptr,nullptr,isabove);
-    }
-
-    void Drawobject(Camera& camera, Shader& shader, glm::mat4 model, float screenWidth, float screenHeight)
-    {
-        glm::mat4 view = camera.GetViewMatrix();
-        glm::mat4 projection = glm::perspective(
-            glm::radians(camera.Zoom), 
-            screenWidth / screenHeight, 
-            0.1f, 
-            10000.0f
-        );
-
-        shader.use();
-        shader.setMat4("model", model);
-        shader.setMat4("view", view);
-        shader.setMat4("projection", projection);
     }
     
     // 完整渲染一帧

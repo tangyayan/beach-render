@@ -67,7 +67,9 @@ public:
               glm::vec4 clipping_plane = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f),
               unsigned int reflectionTexture = 0,
               unsigned int refractionTexture = 0,
-              unsigned int depthTexture = 0
+              unsigned int depthTexture = 0,
+              unsigned int shadowMap = 0,
+              glm::mat4 lightSpaceMatrix = glm::mat4(1.0f)
             ) 
     {
         glm::mat4 view = camera.GetViewMatrix();
@@ -93,6 +95,12 @@ public:
         light.SetLight(terrainShader);
         terrainShader.setFloat("shininess", 32.0f);
         terrainShader.setInt("isAbove", is_above);
+
+        // shadow
+        terrainShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, shadowMap);
+        terrainShader.setInt("shadowMap", 3);
         
         terrain->Draw(terrainShader);
 

@@ -21,6 +21,7 @@
 #include <sstream>
 #include <iostream>
 #include <map>
+#include <unordered_map>
 #include <vector>
 using namespace std;
 
@@ -29,6 +30,8 @@ unsigned int TextureFromFile(const char *path, const string &directory, bool gam
 class Model 
 {
 public:
+    static std::unordered_map<std::string, Model*> modelList; // 储存所有模型，供物体使用
+
     // model data 
     vector<Texture> textures_loaded;
     vector<Mesh>    meshes;
@@ -39,6 +42,7 @@ public:
     Model(string const &path, bool gamma = false) : gammaCorrection(gamma)
     {
         loadModel(path);
+        modelList[path] = this; // 将模型存入静态列表
     }
 
     // draws the model, and thus all its meshes
@@ -366,5 +370,7 @@ unsigned int TextureFromFile(const char *path, const string &directory, bool gam
 
     return textureID;
 }
+
+std::unordered_map<std::string, Model*> Model::modelList;
 
 #endif
