@@ -19,8 +19,6 @@ https://www.slembcke.net/blog/WaterWaves/
 
 N个序列，第一个波的波长为平均水高/流速，第2，3...个为N/1，N/2...，因此要注意N/2后面的波实际上是反向的
 
-水面的速度正比于$\sqrt{波长}$
-
 摆线波
 
 ```javascript
@@ -50,11 +48,11 @@ FFT
 	for(let i = 0; i <= waves.n/2; i++){
 		let phase = 5*time*sqrt(i);
 		let phase_complex = complex(cos(phase), sin(phase));
-	
+
 		let p = complex_multiply(waves[i], phase_complex);
 		waves_x[i] = complex(-p.im, p.re);
 		waves_y[i] = p;
-	
+
 		let j = (waves.n - i) % waves.n;
 		let q = complex_multiply(waves[j], phase_complex);
 		waves_x[j] = complex(q.im, -q.re);
@@ -64,17 +62,3 @@ FFT
 	water_y = inverse_fft(waves_y);
 
 ```
-
-菲利普频谱
-
-![1765686091745](image/README/1765686091745.png)
-
-h(k,t)即为waves
-
-因此海洋的idft如下：
-
-![1765694589636](image/README/1765694589636.png)
-
-![1765703163215](image/README/1765703163215.png)
-
-顺风的能量增大
