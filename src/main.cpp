@@ -346,6 +346,18 @@ int main()
         glm::mat4(1.0f),orca_pos, 0.0f, orca_scale, false, true);
     orca.Update();
 
+    glm::vec3 chair_pos = glm::vec3(-5.0f, 0.0f, -30.0f);
+    glm::vec3 chair_scale = glm::vec3(0.1f, 0.1f, 0.1f);
+    GameObject chair(FileSystem::getPath("model/cover-chair/Cover_Chair.obj"),
+        glm::mat4(1.0f), chair_pos, 0.0f, chair_scale);
+    chair.Update();
+
+    glm::vec3 umbrella_pos = glm::vec3(20.0f, 0.0f, -30.0f);
+    glm::vec3 umbrella_scale = glm::vec3(1.5f, 1.5f, 1.5f);
+    GameObject umbrella(FileSystem::getPath("model/beach_table.glb"),
+        glm::mat4(1.0f), umbrella_pos, 0.0f, umbrella_scale);
+    umbrella.Update();
+
     // Shader modelShader(FileSystem::getPath("model/model_loading.vs").c_str(),
                     //   FileSystem::getPath("model/model_loading.fs").c_str());
 

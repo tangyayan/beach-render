@@ -41,6 +41,13 @@ public:
     // constructor, expects a filepath to a 3D model.
     Model(string const &path, bool flipY = false) : flipY(flipY), aabb_min(glm::vec3(FLT_MAX)), aabb_max(glm::vec3(-FLT_MAX))
     {
+        if(modelList.find(path) != modelList.end())
+        {
+            // 模型已加载，直接使用现有实例
+            *this = *(modelList[path]);
+            std::cout << "Model already loaded: " << path << ", reusing existing instance." << std::endl;
+            return;
+        }
         loadModel(path);
         modelList[path] = this; // 将模型存入静态列表
     }
