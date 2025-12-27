@@ -62,6 +62,8 @@ public:
         auto itr = GameObject::gameObjList.begin();
         for (int i = 0; i < GameObject::gameObjList.size(); i++, ++itr)
         {
+            if((*itr)->isSelected && GameObject::movingObject)continue;
+            (*itr)->snaptoterrain(main_scene.GetTerrain());
             (*itr)->Draw(shadowShader,projection,view);
         }
         
@@ -149,6 +151,7 @@ public:
 		model_loadingShader.setVec3("viewPos", camera.Position);
         for (int i = 0; i < GameObject::gameObjList.size(); i++, ++itr)
         {
+            if((*itr)->isSelected && GameObject::movingObject)continue;
             (*itr)->Draw(model_loadingShader, projection, view);
         }
 

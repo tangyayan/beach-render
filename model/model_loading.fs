@@ -72,11 +72,14 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 albedo)
     return ambient + diffuse + specular;
 }
 
+uniform int isSelected;
+uniform vec3 selectColor;
+
 void main()
 {    
     // FragColor = texture(texture_diffuse1, TexCoords);
     vec3 albedo = texture(texture_diffuse1, TexCoords).rgb;
-
+    
     vec3 norm = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
 
@@ -85,5 +88,12 @@ void main()
     for(int i = 0; i < NR_POINT_LIGHTS; i++)
         result += CalcPointLight(pointLights[i], norm, FragPos, viewDir, albedo);
 
+    if (isSelected==1)
+    {
+        // 添加高亮边缘或整体高亮
+        result = mix(result, selectColor, 0.3); // 混合30%的选中颜色
+    }
+
     FragColor = vec4(result, 1.0);
+
 }

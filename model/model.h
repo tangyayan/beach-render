@@ -39,7 +39,7 @@ public:
     bool gammaCorrection;
 
     // constructor, expects a filepath to a 3D model.
-    Model(string const &path, bool gamma = false) : gammaCorrection(gamma)
+    Model(string const &path, bool gamma = false) : gammaCorrection(gamma), aabb_min(glm::vec3(FLT_MAX)), aabb_max(glm::vec3(-FLT_MAX))
     {
         loadModel(path);
         modelList[path] = this; // 将模型存入静态列表
@@ -51,9 +51,31 @@ public:
         for(unsigned int i = 0; i < meshes.size(); i++)
             meshes[i].Draw(shader);
     }
+
+    // 获取模型的原始包围盒（未缩放）
+    void GetBoundingBox(glm::vec3& min, glm::vec3& max) const
+    {
+        if(aabb_min.x == FLT_MAX && aabb_max.x == -FLT_MAX)
+        {
+            for (const auto& mesh : meshes)
+            {
+                for (const auto& vertex : mesh.vertices)
+                {
+                    min = glm::min(min, vertex.Position);
+                    max = glm::max(max, vertex.Position);
+                }
+            }
+        }
+        else
+        {
+            min = aabb_min;
+            max = aabb_max;
+        }
+    }
     
 private:
     const aiScene* scene;  // 保存场景指针以访问嵌入式纹理
+    glm::vec3 aabb_min, aabb_max; // 模型的轴对齐包围盒
     
     // 加载嵌入式纹理
     unsigned int LoadEmbeddedTexture(const aiTexture* aiTex)

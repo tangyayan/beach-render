@@ -56,10 +56,64 @@ void processInput(GLFWwindow* window)
         blinnKeyPressed = false;
     }
 }
+
+// 屏幕坐标转世界射线
+void ScreenToWorldRay(double mouseX, double mouseY, Camera& camera,
+                      glm::vec3& rayOrigin, glm::vec3& rayDir)
+{
+    // 归一化设备坐标
+    float x = (2.0f * mouseX) / screenWidth - 1.0f;
+    float y = 1.0f - (2.0f * mouseY) / screenHeight;
+    
+    glm::vec4 rayClip = glm::vec4(x, y, -1.0f, 1.0f);//近平面
+    
+    // 视图空间
+    glm::mat4 projectionMatrix = glm::perspective(glm::radians(camera.Zoom), 
+                                                  (float)screenWidth / screenHeight, 
+                                                  0.1f, 100.0f);
+    glm::vec4 rayEye = glm::inverse(projectionMatrix) * rayClip;
+    rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
+    
+    // 世界空间
+    glm::mat4 viewMatrix = camera.GetViewMatrix();
+    glm::vec3 rayWorld = glm::vec3(glm::inverse(viewMatrix) * rayEye);
+    rayDir = glm::normalize(rayWorld);
+    rayOrigin = camera.Position;
+}
+
 // glfw: whenever the mouse moves, this callback is called
 // -------------------------------------------------------
+GameObject* GameObject::movingObject = nullptr;
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
+    if(GameObject::selectedObject != nullptr)
+    {
+        glm::vec3 rayOrigin, rayDir;
+        ScreenToWorldRay(xposIn, yposIn, camera, rayOrigin, rayDir);
+        float terrainHeight = 0.0f;//因为地面平缓，所以偷懒了
+        float t = (terrainHeight - rayOrigin.y) / rayDir.y;
+        float intersectX = rayOrigin.x + rayDir.x * t;
+        float intersectZ = rayOrigin.z + rayDir.z * t;
+        glm::vec3 newPos = glm::vec3(intersectX, terrainHeight, intersectZ);
+        if(GameObject::movingObject == nullptr)
+        {
+            GameObject::movingObject = new GameObject(
+                GameObject::selectedObject->modelPath,
+                GameObject::selectedObject->modelMat,
+                newPos,
+                GameObject::selectedObject->rotY,
+                GameObject::selectedObject->sca
+            );
+            GameObject::movingObject->isSelected = false;
+            GameObject::movingObject->Update();
+            std::cout<<GameObject::gameObjList.size()<<std::endl;
+        }
+        else{
+            GameObject::movingObject->pos = newPos;
+            GameObject::movingObject->Update();
+        }
+    }
+
     /*
     * 鼠标在按住时拖动可以改变摄像机的欧拉角（俯仰角和偏航角）
     */
@@ -86,6 +140,73 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     lastY = ypos;
 
     camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+// glfw: mouse button
+// 添加一个鼠标按钮回调函数
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+    {
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        
+        // 屏幕坐标转换为世界坐标射线
+        glm::vec3 rayOrigin, rayDir;
+        ScreenToWorldRay(xpos, ypos, camera, rayOrigin, rayDir);
+        std::cout << "rayOrigin = ("
+        << rayOrigin.x << ", "
+        << rayOrigin.y << ", "
+        << rayOrigin.z << ")\n";
+
+        std::cout << "rayDir = ("
+                << rayDir.x << ", "
+                << rayDir.y << ", "
+                << rayDir.z << ")\n";
+
+        if(GameObject::selectedObject != nullptr)
+        {
+            float terrainHeight = 0.0f;//因为地面平缓，所以偷懒了
+            float t = (terrainHeight - rayOrigin.y) / rayDir.y;
+            float intersectX = rayOrigin.x + rayDir.x * t;
+            float intersectZ = rayOrigin.z + rayDir.z * t;
+            GameObject::selectedObject->pos = glm::vec3(intersectX, terrainHeight, intersectZ);
+            GameObject::selectedObject->Update();
+            
+            GameObject::selectedObject->Deselect();
+            if(GameObject::movingObject != nullptr)
+            {
+                delete GameObject::movingObject;
+                GameObject::movingObject = nullptr;
+            }
+            return;
+        }
+
+        // 检测所有物体
+        GameObject* closestObject = nullptr;
+        float closestDistance = FLT_MAX;
+        
+        for (auto* obj : GameObject::gameObjList)
+        {
+            if (obj->RayIntersect(rayOrigin, rayDir))
+            {
+                float distance = glm::length(obj->pos - rayOrigin);
+                if (distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    closestObject = obj;
+                }
+            }
+        }
+        
+        if (closestObject != nullptr)
+        {
+            printf("select\n");
+            closestObject->Select();
+        }
+        else if (GameObject::selectedObject != nullptr)
+            GameObject::selectedObject->Deselect();
+    }
 }
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
@@ -120,6 +241,7 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -209,10 +331,14 @@ int main()
         skybox
     );
 
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, -0.3f)); // translate it down so it's at the center of the scene
-    model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));	// it's a bit too big for our scene, so scale it down
-    GameObject coconut(FileSystem::getPath("model/coconut_palm.glb"), model);
+    // glm::mat4 model = glm::mat4(1.0f);
+    glm::vec3 coco_pos = glm::vec3(0.0f, 0.0f, -0.3f);
+    glm::vec3 coco_scale = glm::vec3(0.05f, 0.05f, 0.05f);
+    // model = glm::translate(model, glm::vec3(0.0f, 0.0f, -0.3f)); // translate it down so it's at the center of the scene
+    // model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));	// it's a bit too big for our scene, so scale it down
+    GameObject coconut(FileSystem::getPath("model/coconut_palm.glb"), 
+        glm::mat4(1.0f), coco_pos, 0.0f, coco_scale);
+    coconut.Update();
     
     // Shader modelShader(FileSystem::getPath("model/model_loading.vs").c_str(),
                     //   FileSystem::getPath("model/model_loading.fs").c_str());
