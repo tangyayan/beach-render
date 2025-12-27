@@ -86,7 +86,7 @@ void ScreenToWorldRay(double mouseX, double mouseY, Camera& camera,
 GameObject* GameObject::movingObject = nullptr;
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
-    if(GameObject::selectedObject != nullptr)
+    if(GameObject::selectedObject != nullptr && GameObject::selectedObject->isGround)
     {
         glm::vec3 rayOrigin, rayDir;
         ScreenToWorldRay(xposIn, yposIn, camera, rayOrigin, rayDir);
@@ -164,7 +164,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 << rayDir.y << ", "
                 << rayDir.z << ")\n";
 
-        if(GameObject::selectedObject != nullptr)
+        if(GameObject::selectedObject != nullptr && GameObject::selectedObject->isGround)
         {
             float terrainHeight = 0.0f;//因为地面平缓，所以偷懒了
             float t = (terrainHeight - rayOrigin.y) / rayDir.y;
@@ -340,6 +340,12 @@ int main()
         glm::mat4(1.0f), coco_pos, 0.0f, coco_scale);
     coconut.Update();
     
+    glm::vec3 orca_pos = glm::vec3(2.0f, -5.0f, 100.0f);
+    glm::vec3 orca_scale = glm::vec3(0.01f, 0.01f, 0.01f);
+    GameObject orca(FileSystem::getPath("model/orca.glb"),
+        glm::mat4(1.0f),orca_pos, 0.0f, orca_scale, false, true);
+    orca.Update();
+
     // Shader modelShader(FileSystem::getPath("model/model_loading.vs").c_str(),
                     //   FileSystem::getPath("model/model_loading.fs").c_str());
 

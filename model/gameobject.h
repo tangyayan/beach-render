@@ -89,16 +89,17 @@ public:
 		const glm::mat4& modelMat = glm::mat4(1.0f), 
 		const glm::vec3 position = glm::vec3(0.0f),
 		const float rotateY = 0.0f, 
-		const glm::vec3 scale = glm::vec3(0.2f)
+		const glm::vec3 scale = glm::vec3(0.2f),
+		bool isGround = true, bool gamma = false
 	)
-		: pos(position), rotY(rotateY), sca(scale), isSelected(false)
+		: pos(position), rotY(rotateY), sca(scale), isSelected(false), isGround(isGround)
 	{
 		this->modelMat = modelMat;
 		this->modelPath = modelPath;
 		if (Model::modelList.find(FileSystem::getPath(modelPath)) == Model::modelList.end())
 		{
 			// 该模型未加载到List
-			Model* model = new Model(modelPath);
+			Model* model = new Model(modelPath, gamma);
 			this->model = model;
 			glm::vec3 min, max;
 			model->GetBoundingBox(min, max);
@@ -129,13 +130,12 @@ public:
 	void Draw(Shader& shader,
 		const glm::mat4& projectionMat,
 		const glm::mat4& viewMat = glm::mat4(1.0f),
-		const glm::vec4& clippling_plane = glm::vec4(0.0f, -1.0f, 0.0f, 999999.0f),
-		bool isHit = false)
+		const glm::vec4& clippling_plane = glm::vec4(0.0f, -1.0f, 0.0f, 999999.0f))
 	{
 		shader.use();
 		shader.setMat4("projection", projectionMat);
 		shader.setMat4("view", viewMat);
-		// shader.setVec4("plane", clippling_plane);
+		shader.setVec4("clipPlane", clippling_plane);
 		shader.setMat4("model", modelMat);
 		
 		// 如果被选中，可以设置高亮效果
@@ -224,6 +224,7 @@ public:
 
 	void snaptoterrain(Terrain* terrain)
 	{
+		if(!isGround)return;
 		/*
 		* 吸附到地面
 		*/

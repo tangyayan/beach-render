@@ -101,7 +101,7 @@ public:
         float waterHeight = main_scene.GetWaterPlane()->GetHeight();
         
         refractionFBO.Bind();
-        // glEnable(GL_CLIP_DISTANCE0);
+        glEnable(GL_CLIP_DISTANCE0);
 
         glClearColor(0.2f, 0.4f, 0.6f, 1.0f);  // 水下颜色
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -114,6 +114,22 @@ public:
             0.0f,
             glm::vec4(0.0f, -1.0f, 0.0f, waterHeight-50.0f)
         );
+        // 渲染所有物体到折射纹理
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 10000.0f);
+        glm::mat4 view = camera.GetViewMatrix();
+        auto itr = GameObject::gameObjList.begin();
+        for (int i = 0; i < GameObject::gameObjList.size(); i++, ++itr)
+        {
+            if((*itr)->isSelected && GameObject::movingObject)continue;
+            if(camera.Position.y > waterHeight)
+            {
+                (*itr)->Draw(model_loadingShader,projection,view, glm::vec4(0, -1, 0, waterHeight));
+            }
+            else
+            {
+                (*itr)->Draw(model_loadingShader,projection,view,glm::vec4(0, 1, 0, -waterHeight));
+            }
+        }
         main_skybox.Render(nullptr,nullptr,1);
 
         // glDisable(GL_CLIP_DISTANCE0);

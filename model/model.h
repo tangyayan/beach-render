@@ -36,10 +36,10 @@ public:
     vector<Texture> textures_loaded;
     vector<Mesh>    meshes;
     string directory;
-    bool gammaCorrection;
+    bool flipY;
 
     // constructor, expects a filepath to a 3D model.
-    Model(string const &path, bool gamma = false) : gammaCorrection(gamma), aabb_min(glm::vec3(FLT_MAX)), aabb_max(glm::vec3(-FLT_MAX))
+    Model(string const &path, bool flipY = false) : flipY(flipY), aabb_min(glm::vec3(FLT_MAX)), aabb_max(glm::vec3(-FLT_MAX))
     {
         loadModel(path);
         modelList[path] = this; // 将模型存入静态列表
@@ -182,55 +182,143 @@ private:
         }
     }
 
+    // Mesh processMesh(aiMesh *mesh, const aiScene *scene)
+    // {
+    //     vector<Vertex> vertices;
+    //     vector<unsigned int> indices;
+    //     vector<Texture> textures;
+
+    //     // 处理顶点
+    //     for(unsigned int i = 0; i < mesh->mNumVertices; i++)
+    //     {
+    //         Vertex vertex;
+    //         glm::vec3 vector;
+            
+    //         // 位置
+    //         vector.x = mesh->mVertices[i].x;
+    //         vector.y = mesh->mVertices[i].y;
+    //         vector.z = mesh->mVertices[i].z;
+    //         vertex.Position = vector;
+            
+    //         // 法线
+    //         if (mesh->HasNormals())
+    //         {
+    //             vector.x = mesh->mNormals[i].x;
+    //             vector.y = mesh->mNormals[i].y;
+    //             vector.z = mesh->mNormals[i].z;
+    //             vertex.Normal = vector;
+    //         }
+            
+    //         // 纹理坐标
+    //         if(mesh->mTextureCoords[0])
+    //         {
+    //             glm::vec2 vec;
+    //             vec.x = mesh->mTextureCoords[0][i].x; 
+    //             vec.y = mesh->mTextureCoords[0][i].y;
+    //             vertex.TexCoords = vec;
+                
+    //             // 切线
+    //             if(mesh->mTangents)
+    //             {
+    //                 vector.x = mesh->mTangents[i].x;
+    //                 vector.y = mesh->mTangents[i].y;
+    //                 vector.z = mesh->mTangents[i].z;
+    //                 vertex.Tangent = vector;
+    //             }
+                
+    //             // 副切线
+    //             if(mesh->mBitangents)
+    //             {
+    //                 vector.x = mesh->mBitangents[i].x;
+    //                 vector.y = mesh->mBitangents[i].y;
+    //                 vector.z = mesh->mBitangents[i].z;
+    //                 vertex.Bitangent = vector;
+    //             }
+    //         }
+    //         else
+    //         {
+    //             vertex.TexCoords = glm::vec2(0.0f, 0.0f);
+    //         }
+
+    //         vertices.push_back(vertex);
+    //     }
+        
+    //     // 处理索引
+    //     for(unsigned int i = 0; i < mesh->mNumFaces; i++)
+    //     {
+    //         aiFace face = mesh->mFaces[i];
+    //         for(unsigned int j = 0; j < face.mNumIndices; j++)
+    //             indices.push_back(face.mIndices[j]);        
+    //     }
+        
+    //     // 处理材质
+    //     aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+        
+    //     // 1. 漫反射贴图
+    //     vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+    //     textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+        
+    //     // 2. 镜面反射贴图
+    //     vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+    //     textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+        
+    //     // 3. 法线贴图
+    //     std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
+    //     textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+        
+    //     // 4. 高度贴图
+    //     std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
+    //     textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+        
+    //     std::cout << " | Mesh: " << (mesh->mName.length > 0 ? mesh->mName.C_Str() : "unnamed") 
+    //               << " | Vertices: " << vertices.size() 
+    //               << " | Indices: " << indices.size()
+    //               << " | Textures: " << textures.size() << std::endl;
+        
+    //     return Mesh(vertices, indices, textures);
+    // }
+
     Mesh processMesh(aiMesh *mesh, const aiScene *scene)
     {
         vector<Vertex> vertices;
         vector<unsigned int> indices;
         vector<Texture> textures;
 
-        // 处理顶点
         for(unsigned int i = 0; i < mesh->mNumVertices; i++)
         {
             Vertex vertex;
             glm::vec3 vector;
             
-            // 位置
             vector.x = mesh->mVertices[i].x;
-            vector.y = mesh->mVertices[i].y;
+            vector.y = flipY ? -mesh->mVertices[i].y : mesh->mVertices[i].y;
             vector.z = mesh->mVertices[i].z;
             vertex.Position = vector;
             
-            // 法线
             if (mesh->HasNormals())
             {
                 vector.x = mesh->mNormals[i].x;
-                vector.y = mesh->mNormals[i].y;
+                vector.y = flipY ? -mesh->mNormals[i].y : mesh->mNormals[i].y;
                 vector.z = mesh->mNormals[i].z;
                 vertex.Normal = vector;
             }
             
-            // 纹理坐标
             if(mesh->mTextureCoords[0])
             {
-                glm::vec2 vec;
-                vec.x = mesh->mTextureCoords[0][i].x; 
-                vec.y = mesh->mTextureCoords[0][i].y;
-                vertex.TexCoords = vec;
+                vertex.TexCoords = glm::vec2(mesh->mTextureCoords[0][i].x, 
+                                            mesh->mTextureCoords[0][i].y);
                 
-                // 切线
                 if(mesh->mTangents)
                 {
                     vector.x = mesh->mTangents[i].x;
-                    vector.y = mesh->mTangents[i].y;
+                    vector.y = flipY ? -mesh->mTangents[i].y : mesh->mTangents[i].y;
                     vector.z = mesh->mTangents[i].z;
                     vertex.Tangent = vector;
                 }
                 
-                // 副切线
                 if(mesh->mBitangents)
                 {
                     vector.x = mesh->mBitangents[i].x;
-                    vector.y = mesh->mBitangents[i].y;
+                    vector.y = flipY ? -mesh->mBitangents[i].y : mesh->mBitangents[i].y;
                     vector.z = mesh->mBitangents[i].z;
                     vertex.Bitangent = vector;
                 }
@@ -243,17 +331,25 @@ private:
             vertices.push_back(vertex);
         }
         
-        // 处理索引
         for(unsigned int i = 0; i < mesh->mNumFaces; i++)
         {
             aiFace face = mesh->mFaces[i];
-            for(unsigned int j = 0; j < face.mNumIndices; j++)
-                indices.push_back(face.mIndices[j]);        
+            if (flipY)
+            {
+                // 反转顶点顺序以保持正确的面朝向
+                for(int j = face.mNumIndices - 1; j >= 0; j--)
+                    indices.push_back(face.mIndices[j]);
+            }
+            else
+            {
+                for(unsigned int j = 0; j < face.mNumIndices; j++)
+                    indices.push_back(face.mIndices[j]);
+            }
         }
         
         // 处理材质
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-        
+    
         // 1. 漫反射贴图
         vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
@@ -271,9 +367,9 @@ private:
         textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
         
         std::cout << " | Mesh: " << (mesh->mName.length > 0 ? mesh->mName.C_Str() : "unnamed") 
-                  << " | Vertices: " << vertices.size() 
-                  << " | Indices: " << indices.size()
-                  << " | Textures: " << textures.size() << std::endl;
+                << " | Vertices: " << vertices.size() 
+                << " | Indices: " << indices.size()
+                << " | Textures: " << textures.size() << std::endl;
         
         return Mesh(vertices, indices, textures);
     }
