@@ -145,6 +145,8 @@ public:
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 10000.0f);
         glm::mat4 view = camera.GetViewMatrix();
         auto itr = GameObject::gameObjList.begin();
+        main_light.SetLight(model_loadingShader);
+		model_loadingShader.setVec3("viewPos", camera.Position);
         for (int i = 0; i < GameObject::gameObjList.size(); i++, ++itr)
         {
             (*itr)->Draw(model_loadingShader, projection, view);

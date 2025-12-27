@@ -194,11 +194,11 @@ private:
         // );
         baker = new OceanFFTBaker(
             256,             // 空间分辨率
-            32,              // 时间帧数 (32 帧)
+            40,              // 时间帧数 (32 帧)
             5.0f,            // 时间跨度 (5 秒循环)
             256,           // L
             0.5f,         // Phillips 谱振幅
-            glm::vec2(0.0f, -1.0f),  // 风向
+            glm::vec2(0.0f, 1.0f),  // 风向
             30.0f            // 风速
         );
         waterPlane = new OceanBaked(

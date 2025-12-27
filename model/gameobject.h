@@ -5,6 +5,7 @@
 #include <Shader.h>
 #include <FileSystem.h>
 #include <Model.h>
+#include <Light.h>
 
 #include <list>
 
@@ -21,6 +22,7 @@ public:
 	string modelPath;
 private:
 	Model* model;
+	Light* light;
 public:
 	GameObject(const std::string& modelPath,
 		const glm::mat4& modelMat = glm::mat4(1.0f), const glm::vec3 position = glm::vec3(0.0f),

@@ -41,7 +41,7 @@ void main()
     vec3 norm = normalize(Normal);
 
     vec2 ndc = glp.xy / glp.w;
-    vec2 refractTexCoords = ndc * 0.5 + 0.5 + norm.xz * 0.02;
+    vec2 refractTexCoords = ndc * 0.5 + 0.5 + norm.xz * 0.1;
     vec2 reflectTexCoords = vec2(refractTexCoords.x, 1.0 - refractTexCoords.y);
     
     refractTexCoords = clamp(refractTexCoords, 0.001, 0.999);
