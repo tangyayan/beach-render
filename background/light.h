@@ -114,6 +114,21 @@ public:
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 		return lightSpaceMatrix;
 	}
+
+    void UpdateDirLight(const glm::vec3& direction,
+                        const glm::vec3& ambient,
+                        const glm::vec3& diffuse,
+                        const glm::vec3& specular)
+    {
+        parallel_light.direction = direction;
+        parallel_light.ambient  = ambient;
+        parallel_light.diffuse  = diffuse;
+        parallel_light.specular = specular;
+    }
+    Shader& GetLightboxShader()
+    {
+        return LightboxShader;
+    }
 };
 
 #endif // LIGHT_H

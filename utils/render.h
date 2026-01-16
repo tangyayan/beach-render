@@ -15,6 +15,7 @@
 #include <shadowmap.h>
 #include <shader.h>
 #include <gameobject.h>
+#include <cube.h>
 
 class Render
 {
@@ -31,17 +32,76 @@ private:
     
     float moveFactor = 0.0f;  // 波纹动画因子
 
-public:
-    Render(Scene& main_scene, Light& main_light, Framebuffer& reflectionFBO, 
-        Framebuffer& waterfb, SkyBox& main_skybox)
-    :   main_scene(main_scene), main_light(main_light), main_skybox(main_skybox),
-        reflectionFBO(reflectionFBO), refractionFBO(waterfb),
-        shadowMap(4096, 4096),  
-        shadowShader(FileSystem::getPath("src/simpleDepthShader.vs").c_str(),
-                    FileSystem::getPath("src/simpleDepthShader.fs").c_str()),
-        model_loadingShader(FileSystem::getPath("model/model_loading.vs").c_str(),
-                            FileSystem::getPath("model/model_loading.fs").c_str())
+    Cube* sunCube = nullptr;
+
+    void UpdateDayNight(float time, const Camera& camera)
     {
+        // 一个简单的周期：time 以秒为单位，设置成 60 秒一圈
+        float cycle = 60.0f;
+        float t = fmod(time, cycle) / cycle; // [0,1]
+
+        // 让太阳绕 XZ 平面转动并带 Y 高度：这里绕 X 轴做俯仰
+        // 角度从 -80°(清晨) 到 260°(再回到清晨)，可以微调
+        float angle = t * glm::radians(360.0f) - glm::radians(90.0f);
+
+        // 半径：太阳距离场景中心多远
+        float radius = 500.0f; // 远一点，避免太近导致阴影奇怪
+        glm::vec3 sunPos(
+            0.0f,
+            radius * sin(angle),
+            radius * cos(angle)
+        );
+
+        // 方向光的 direction 是“从物体指向光源的反方向”
+        glm::vec3 dir = -glm::normalize(sunPos);
+
+        // 根据高度计算亮度与颜色
+        float h = glm::clamp(sunPos.y / radius, -1.0f, 1.0f); // [-1,1] 近似高度
+
+        // 白天/夜晚插值因子
+        float dayFactor = glm::smoothstep(-0.2f, 0.2f, h); // 太阳在地平线附近渐变
+
+        // 朴素颜色：白天偏暖，夜晚偏冷
+        glm::vec3 dayAmbient  = glm::vec3(0.3f, 0.3f, 0.25f);
+        glm::vec3 dayDiffuse  = glm::vec3(0.9f, 0.85f, 0.8f);
+        glm::vec3 daySpecular = glm::vec3(0.9f);
+
+        glm::vec3 nightAmbient  = glm::vec3(0.02f, 0.02f, 0.05f);
+        glm::vec3 nightDiffuse  = glm::vec3(0.05f, 0.05f, 0.1f);
+        glm::vec3 nightSpecular = glm::vec3(0.1f);
+
+        glm::vec3 ambient  = glm::mix(nightAmbient,  dayAmbient,  dayFactor);
+        glm::vec3 diffuse  = glm::mix(nightDiffuse,  dayDiffuse,  dayFactor);
+        glm::vec3 specular = glm::mix(nightSpecular, daySpecular, dayFactor);
+
+        main_light.UpdateDirLight(dir, ambient, diffuse, specular);
+
+        // 画太阳立方体：把 sunCube 画在 sunPos 上
+        if (sunCube)
+        {
+            glm::mat4 model(1.0f);
+            model = glm::translate(model, sunPos);
+            model = glm::scale(model, glm::vec3(20.0f)); // 太阳的大小
+
+            // 不用裁剪平面、不用纹理
+            glm::vec4 noClip(0.0f);
+            sunCube->Draw(const_cast<Camera&>(camera), noClip, model, false);
+        }
+    }
+
+public:
+    Render(Scene& main_scene, Light& main_light, Framebuffer& reflectionFBO,
+        Framebuffer& waterfb, SkyBox& main_skybox)
+        : main_scene(main_scene), main_light(main_light), main_skybox(main_skybox),
+        reflectionFBO(reflectionFBO), refractionFBO(waterfb),
+        shadowMap(4096, 4096),
+        shadowShader(FileSystem::getPath("src/simpleDepthShader.vs").c_str(),
+            FileSystem::getPath("src/simpleDepthShader.fs").c_str()),
+        model_loadingShader(FileSystem::getPath("model/model_loading.vs").c_str(),
+            FileSystem::getPath("model/model_loading.fs").c_str())
+    {
+        std::vector<Texture> dummyTextures;
+        sunCube = new Cube(dummyTextures, main_light.GetLightboxShader());
     }
     
     // 渲染阴影贴图
@@ -146,6 +206,10 @@ public:
 
         glDisable(GL_CLIP_DISTANCE0);
 
+        // 新增：更新昼夜 & 画太阳立方体
+        UpdateDayNight(time, camera);
+
+        // main_scene.Draw 内部会调用 light.SetLight
         main_scene.Draw(
             main_light,
             camera,
@@ -164,7 +228,7 @@ public:
         glm::mat4 view = camera.GetViewMatrix();
         auto itr = GameObject::gameObjList.begin();
         main_light.SetLight(model_loadingShader);
-		model_loadingShader.setVec3("viewPos", camera.Position);
+        model_loadingShader.setVec3("viewPos", camera.Position);
         for (int i = 0; i < GameObject::gameObjList.size(); i++, ++itr)
         {
             if((*itr)->isSelected && GameObject::movingObject)continue;
