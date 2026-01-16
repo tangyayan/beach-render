@@ -123,7 +123,7 @@ public:
             glm::radians(camera.Zoom),
             800.0f / 600.0f,  // 可以传入参数
             0.1f,
-            100.0f
+            20000.0f
         );
 
         shader.setMat4("model", model);

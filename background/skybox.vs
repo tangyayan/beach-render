@@ -7,6 +7,8 @@ uniform mat4 model;
 uniform mat4 projection;
 uniform mat4 view;
 
+uniform float dayFactor;
+
 void main()
 {
     TexCoords = aPos;//天空盒都是1和0刚好与纹理坐标对应

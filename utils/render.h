@@ -33,60 +33,86 @@ private:
     float moveFactor = 0.0f;  // 波纹动画因子
 
     Cube* sunCube = nullptr;
+    float currentDayFactor = 1.0f;
 
     void UpdateDayNight(float time, const Camera& camera)
     {
-        // 一个简单的周期：time 以秒为单位，设置成 60 秒一圈
         float cycle = 60.0f;
-        float t = fmod(time, cycle) / cycle; // [0,1]
+        float t = fmod(time + 1.0f, cycle) / cycle;
 
-        // 让太阳绕 XZ 平面转动并带 Y 高度：这里绕 X 轴做俯仰
-        // 角度从 -80°(清晨) 到 260°(再回到清晨)，可以微调
+        // 太阳绕 X 轴转一圈
         float angle = t * glm::radians(360.0f) - glm::radians(90.0f);
-
-        // 半径：太阳距离场景中心多远
-        float radius = 500.0f; // 远一点，避免太近导致阴影奇怪
+        float radius = 7500.0f;
         glm::vec3 sunPos(
             0.0f,
             radius * sin(angle),
             radius * cos(angle)
         );
+        // 月亮位置：反向，简单用 -sunPos
+        glm::vec3 moonPos = -sunPos;
 
-        // 方向光的 direction 是“从物体指向光源的反方向”
-        glm::vec3 dir = -glm::normalize(sunPos);
+        // 高度 [-1,1]
+        float h = glm::clamp(sunPos.y / radius, -1.0f, 1.0f);
+        float dayFactor = glm::smoothstep(-0.2f, 0.2f, h);
 
-        // 根据高度计算亮度与颜色
-        float h = glm::clamp(sunPos.y / radius, -1.0f, 1.0f); // [-1,1] 近似高度
+        // 更新方向光（白天亮、夜晚暗）
+        glm::vec3 ambient = glm::mix(glm::vec3(0.02f, 0.02f, 0.05f),
+            glm::vec3(0.3f, 0.3f, 0.25f),
+            dayFactor);
+        glm::vec3 diffuse = glm::mix(glm::vec3(0.05f, 0.05f, 0.1f),
+            glm::vec3(0.9f, 0.85f, 0.8f),
+            dayFactor);
+        glm::vec3 specular = glm::mix(glm::vec3(0.1f),
+            glm::vec3(0.9f),
+            dayFactor);
 
-        // 白天/夜晚插值因子
-        float dayFactor = glm::smoothstep(-0.2f, 0.2f, h); // 太阳在地平线附近渐变
+        glm::vec3 lightDirWorld;
+        if (sunPos.y >= 0.0f)
+            lightDirWorld = -glm::normalize(sunPos);   // 白天：太阳方向
+        else
+            lightDirWorld = -glm::normalize(moonPos); // 夜晚：月亮方向
+        main_light.UpdateDirLight(lightDirWorld, ambient, diffuse, specular);
 
-        // 朴素颜色：白天偏暖，夜晚偏冷
-        glm::vec3 dayAmbient  = glm::vec3(0.3f, 0.3f, 0.25f);
-        glm::vec3 dayDiffuse  = glm::vec3(0.9f, 0.85f, 0.8f);
-        glm::vec3 daySpecular = glm::vec3(0.9f);
+        currentDayFactor = dayFactor;
 
-        glm::vec3 nightAmbient  = glm::vec3(0.02f, 0.02f, 0.05f);
-        glm::vec3 nightDiffuse  = glm::vec3(0.05f, 0.05f, 0.1f);
-        glm::vec3 nightSpecular = glm::vec3(0.1f);
-
-        glm::vec3 ambient  = glm::mix(nightAmbient,  dayAmbient,  dayFactor);
-        glm::vec3 diffuse  = glm::mix(nightDiffuse,  dayDiffuse,  dayFactor);
-        glm::vec3 specular = glm::mix(nightSpecular, daySpecular, dayFactor);
-
-        main_light.UpdateDirLight(dir, ambient, diffuse, specular);
-
-        // 画太阳立方体：把 sunCube 画在 sunPos 上
-        if (sunCube)
+        if (sunCube != nullptr)
         {
-            glm::mat4 model(1.0f);
-            model = glm::translate(model, sunPos);
-            model = glm::scale(model, glm::vec3(20.0f)); // 太阳的大小
+            // 判断当前是“太阳在上方”还是“月亮在上方”
+            bool sunAbove = (sunPos.y >= 0.0f);
 
-            // 不用裁剪平面、不用纹理
+            // 设置颜色：太阳 = 土黄色，月亮 = 冷白/淡蓝
+            glm::vec3 sunColor = glm::vec3(0.8f, 0.7f, 0.3f); // 土黄色
+            glm::vec3 moonColor = glm::vec3(0.7f, 0.8f, 1.0f); // 月亮偏冷色
+
+            Shader& lightShader = main_light.GetLightboxShader();
+
+            glm::mat4 model(1.0f);
             glm::vec4 noClip(0.0f);
-            sunCube->Draw(const_cast<Camera&>(camera), noClip, model, false);
+
+            if (sunAbove) // 画太阳
+            {
+                glm::mat4 modelSun(1.0f);
+                modelSun = glm::translate(modelSun, sunPos);
+                modelSun = glm::scale(modelSun, glm::vec3(200.0f)); // 太阳大小
+
+                lightShader.use();
+                lightShader.setVec3("lightColor", sunColor);
+                sunCube->Draw(const_cast<Camera&>(camera), noClip, modelSun, false);
+            }
+            else // 画月亮（与太阳相对）
+            {
+                glm::mat4 modelMoon(1.0f);
+                modelMoon = glm::translate(modelMoon, moonPos);
+                modelMoon = glm::scale(modelMoon, glm::vec3(150.0f)); // 略小一点
+
+                lightShader.use();
+                lightShader.setVec3("lightColor", moonColor);
+                sunCube->Draw(const_cast<Camera&>(camera), noClip, modelMoon, false);
+            }
         }
+
+        // Debug 输出
+        std::cout << "sunPos: " << sunPos.x << " " << sunPos.y << " " << sunPos.z << std::endl;
     }
 
 public:
@@ -149,7 +175,7 @@ public:
         glClearColor(0.5f, 0.7f, 0.9f, 1.0f);  // 天空颜色
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        main_skybox.Render(&reflectCamera, &projMatrix, 1);
+        main_skybox.Render(&reflectCamera, &projMatrix, 1, currentDayFactor);
 
         // glDisable(GL_CLIP_DISTANCE0);
         reflectionFBO.Unbind(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
@@ -190,7 +216,7 @@ public:
                 (*itr)->Draw(model_loadingShader,projection,view,glm::vec4(0, 1, 0, -waterHeight));
             }
         }
-        main_skybox.Render(nullptr,nullptr,1);
+        main_skybox.Render(nullptr, nullptr, 1, currentDayFactor);
 
         // glDisable(GL_CLIP_DISTANCE0);
         refractionFBO.Unbind(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
@@ -236,7 +262,7 @@ public:
         }
 
         bool isabove = (camera.Position.y > main_scene.GetWaterPlane()->GetHeight());
-        main_skybox.Render(nullptr,nullptr,isabove);
+        main_skybox.Render(nullptr, nullptr, isabove, currentDayFactor);
     }
     
     // 完整渲染一帧
@@ -251,7 +277,7 @@ public:
         // 3. 渲染主场景（包括水面）
         RenderScene(camera, screenWidth, screenHeight, time);
 
-        // main_light.Draw(camera, glm::vec4(0.0f, 1.0f, 0.0f, 1000000.0f));
+        //main_light.Draw(camera, glm::vec4(0.0f, 1.0f, 0.0f, 1000000.0f));
     }
 };
 

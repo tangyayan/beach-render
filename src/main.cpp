@@ -27,6 +27,11 @@ float deltaTime, lastFrame;
 float lastX = screenWidth / 2.0f;
 float lastY = screenHeight / 2.0f;
 bool firstMouse = true;
+
+float worldTime = 0.0f;      // 昼夜系统用的“世界时间”
+float timeScale = 0.2f;      // 默认时间倍率（<1 表示比真实时间慢）
+bool fastTime = false;       // 是否处于加速状态
+
 Camera camera(glm::vec3(0.0f, 30.0f, 50.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, -45.0f);
 void processInput(GLFWwindow* window)
 {
@@ -54,6 +59,18 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_B) == GLFW_RELEASE)
     {
         blinnKeyPressed = false;
+    }
+
+    // 按 F 键切换时间快/慢
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && !fastTime)
+    {
+        fastTime = true;
+        timeScale = 5.0f;   // 快进倍率，比如 5 倍
+    }
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_RELEASE && fastTime)
+    {
+        fastTime = false;
+        timeScale = 0.2f;   // 恢复到慢速，比如 0.2 倍
     }
 }
 
@@ -369,6 +386,8 @@ int main()
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+        worldTime += deltaTime * timeScale;
+
         processInput(window);
 
         // render
@@ -381,7 +400,7 @@ int main()
         glm::vec3 lightPos_ = glm::vec3(lmodel * glm::vec4(lightPos, 1.0f));*/
         //用于对光源进行旋转，以实现多次渲染
         // scene.Draw(light, camera, screenWidth, screenHeight, currentFrame);
-        renderer.RenderFrame(camera, static_cast<float>(screenWidth), static_cast<float>(screenHeight), currentFrame);
+        renderer.RenderFrame(camera, static_cast<float>(screenWidth), static_cast<float>(screenHeight), worldTime);
 
         // glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 10000.0f);
         // glm::mat4 view = camera.GetViewMatrix();

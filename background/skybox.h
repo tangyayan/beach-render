@@ -35,7 +35,7 @@ public:
         m_ProjMatrix = p;
     }
 
-    void Render(Camera *reflectionCamera = nullptr, glm::mat4* customProjMatrix = nullptr, int isabove = 1);
+    void Render(Camera *reflectionCamera = nullptr, glm::mat4* customProjMatrix = nullptr, int isabove = 1, float currentDayFactor = 1.);
 
 private:
     void SetupSkyboxMesh();
@@ -46,6 +46,7 @@ private:
     glm::mat4 m_ProjMatrix;
     unsigned int m_skyboxVAO;
     unsigned int m_skyboxVBO;
+    float m_dayFactor = 1.0f;
 };
 
 void SkyBox::SetupSkyboxMesh()
@@ -143,7 +144,7 @@ bool SkyBox::Init(const string& Directory,
     return m_pCubemapTex->Load();
 }
 
-void SkyBox::Render(Camera *reflectionCamera, glm::mat4* customProjMatrix, int isabove)
+void SkyBox::Render(Camera *reflectionCamera, glm::mat4* customProjMatrix, int isabove, float currentDayFactor)
 {
     // 保存旧的状态
     GLint OldCullFaceMode;
@@ -173,6 +174,7 @@ void SkyBox::Render(Camera *reflectionCamera, glm::mat4* customProjMatrix, int i
     else m_pSkyboxShader->setMat4("projection", m_ProjMatrix);
     m_pSkyboxShader->setInt("skybox", 0); // 纹理单元0
     m_pSkyboxShader->setInt("isAbove", isabove);
+    m_pSkyboxShader->setFloat("m_dayFactor", currentDayFactor);
     
     // 绑定立方体贴图
     m_pCubemapTex->Bind(GL_TEXTURE0);
