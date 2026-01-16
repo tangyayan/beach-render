@@ -40,14 +40,26 @@ private:
         float cycle = 60.0f;
         float t = fmod(time + 1.0f, cycle) / cycle;
 
-        // 太阳绕 X 轴转一圈
         float angle = t * glm::radians(360.0f) - glm::radians(90.0f);
         float radius = 7500.0f;
-        glm::vec3 sunPos(
+
+        // 先在 XZ 平面
+        glm::vec3 basePos(
+            radius * cos(angle),
             0.0f,
-            radius * sin(angle),
-            radius * cos(angle)
+            radius * sin(angle)
         );
+
+        // 绕 X 轴稍微抬一点（控制高度变化方向）
+        float tiltX = glm::radians(60.0f);
+        // 绕 Y 轴决定“从哪个方位升起”
+        float tiltY = glm::radians(30.0f);
+
+        glm::mat4 rot = glm::rotate(glm::mat4(1.0f), tiltX, glm::vec3(1, 0, 0));
+        rot = glm::rotate(rot, tiltY, glm::vec3(0, 1, 0));
+
+        glm::vec3 sunPos = glm::vec3(rot * glm::vec4(basePos, 1.0f));
+
         // 月亮位置：反向，简单用 -sunPos
         glm::vec3 moonPos = -sunPos;
 
