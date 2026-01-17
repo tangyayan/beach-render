@@ -1,5 +1,25 @@
 # 基于opengl的海滩渲染
 
+一个使用现代 OpenGL 技术实现的实时3D海滩场景渲染引擎，支持昼夜循环、水面渲染、阴影映射和交互式物体操作。
+
+### 技术栈
+
+-**图形 API**: OpenGL 3.3+
+
+-**窗口管理**: GLFW 3.x
+
+-**数学库**: GLM
+
+-**模型加载**: Assimp
+
+-**纹理加载**: stb_image
+
+-**构建系统**: CMake
+
+### 系统要求
+
+支持 OpenGL 3.3 的独立显卡
+
 ### 快速开始
 
 ```bash
@@ -9,56 +29,38 @@ cmake ..
 cmmake --build .
 ```
 
-### 纹理坐标
+### 操作指南
 
-左下角为 `(0,0)`，纹理映射在顶点上，表示该顶点属于纹理的哪一个部分
+#### 摄像机控制
 
-### 快速傅里叶变换
+| 按键             | 功能     |
+| ---------------- | -------- |
+| `W`            | 向前移动 |
+| `S`            | 向后移动 |
+| `A`            | 向左移动 |
+| `D`            | 向右移动 |
+| `鼠标左键按住` | 旋转视角 |
+| `鼠标滚轮`     | 缩放视野 |
 
-https://www.slembcke.net/blog/WaterWaves/
+#### 物体操作
 
-N个序列，第一个波的波长为平均水高/流速，第2，3...个为N/1，N/2...，因此要注意N/2后面的波实际上是反向的
+| 按键                 | 功能                           |
+| -------------------- | ------------------------------ |
+| `鼠标右键点击`     | 选中/取消选中物体              |
+| `鼠标移动`         | 拖动选中的物体（自动吸附地形） |
+| `鼠标右键再次点击` | 确认物体位置                   |
 
-摆线波
+> **注意**: 只有地面物体可以移动。选中的物体会显示为黄色高亮。
 
-```javascript
-let phase = x/wavelength - time/wavelength;
-x_out = x - amplitude*sin(phase);
-y_out = amplitude*cos(phase);
-```
+#### 场景控制
 
-摆线波混合
+| 按键    | 功能                      |
+| ------- | ------------------------- |
+| `F`   | 切换时间流速（快速/正常） |
+| `ESC` | 退出程序                  |
 
-```java
-x_out = x, y_out = 0;
+#### 特殊效果
 
-let amp0 = 3.0, len0 = 9;
-x_out -= amp0*sin(x/len0 - time/sqrt(len0));
-y_out += amp0*cos(x/len0 - time/sqrt(len0));
+-**水下视角**: 摄像机位置低于水面时自动切换到水下渲染模式
 
-let amp1 = 0.5, len1 = 2;
-x_out -= amp1*sin(x/len1 - time/sqrt(len1));
-y_out += amp1*cos(x/len1 - time/sqrt(len1));
-
-```
-
-FFT
-
-```
-	for(let i = 0; i <= waves.n/2; i++){
-		let phase = 5*time*sqrt(i);
-		let phase_complex = complex(cos(phase), sin(phase));
-
-		let p = complex_multiply(waves[i], phase_complex);
-		waves_x[i] = complex(-p.im, p.re);
-		waves_y[i] = p;
-
-		let j = (waves.n - i) % waves.n;
-		let q = complex_multiply(waves[j], phase_complex);
-		waves_x[j] = complex(q.im, -q.re);
-		waves_y[j] = q;
-	}
-	water_x = inverse_fft(waves_x);
-	water_y = inverse_fft(waves_y);
-
-```
+-**昼夜循环**: 默认周期为 60 秒，按 `F` 键可加速 5 倍
