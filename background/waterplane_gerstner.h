@@ -281,7 +281,7 @@ public:
                                        const std::vector<Complex>& slope_x,
                                        const std::vector<Complex>& slope_z)
     {
-        float scale = 70.0f; // 振幅缩放因子
+        float scale = 50.0f; // 振幅缩放因子
         for (int m = 0; m < N; m++) {
             for (int n = 0; n < N; n++) {
                 int index = m * N + n;
