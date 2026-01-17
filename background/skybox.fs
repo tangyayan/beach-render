@@ -8,7 +8,7 @@ uniform int isAbove;
 // 0 = 最深夜, 1 = 正午
 uniform float m_dayFactor;
 
-// 简单 gamma 校正函数（可选）
+// 简单 gamma 校正函数
 vec3 applyGamma(vec3 color, float gamma)
 {
     return pow(color, vec3(1.0 / gamma));
@@ -28,7 +28,7 @@ void main()
     float t = clamp(m_dayFactor, 0.0, 1.0);
 
     // ---------------------------
-    // 1. 定义几个关键时刻的“天空基色”
+    // 1. 定义几个关键时刻的天空基色
     // ---------------------------
 
     // 深夜（t≈0 或 t≈1）
@@ -45,8 +45,6 @@ void main()
 
     // 黄昏（类似日出，但更暗）
     vec3 sunsetColor = vec3(0.9, 0.35, 0.15);
-
-    // 深夜 fallback 用 nightColor
 
     // ---------------------------
     // 2. 根据 t 所在区间做多段插值
@@ -92,11 +90,8 @@ void main()
     }
 
     // ---------------------------
-    // 3. 叠加在原始 cubemap 上
-    //    可用乘法（调色）+ 插值（保留细节）
+    // 3. 叠加在原始天空盒上
     // ---------------------------
-
-    // 贴图颜色做个轻微 gamma 矫正，让高光更自然（可选）
     vec3 texCol = applyGamma(baseColor.rgb, 2.2);
 
     // 将 skyTint 看作“环境色”，用 mix 控制其影响程度
@@ -114,7 +109,6 @@ void main()
 
     vec3 finalColor = tinted * brightness;
 
-    // 再次 gamma 回来
     finalColor = applyGamma(finalColor, 1.0 / 2.2);
 
     FragColor = vec4(finalColor, 1.0);

@@ -65,12 +65,12 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && !fastTime)
     {
         fastTime = true;
-        timeScale = 5.0f;   // 快进倍率，比如 5 倍
+        timeScale = 5.0f;   // 快进倍率
     }
     if (glfwGetKey(window, GLFW_KEY_F) == GLFW_RELEASE && fastTime)
     {
         fastTime = false;
-        timeScale = 0.2f;   // 恢复到慢速，比如 0.2 倍
+        timeScale = 0.2f;   // 恢复到慢速
     }
 }
 
