@@ -197,9 +197,9 @@ private:
             40,              // 时间帧数 (32 帧)
             5.0f,            // 时间跨度 (5 秒循环)
             256,           // L
-            1.0f,         // Phillips 谱振幅
+            0.5f,         // Phillips 谱振幅
             glm::vec2(0.0f, 1.0f),  // 风向
-            70.0f            // 风速
+            50.0f            // 风速
         );
         waterPlane = new OceanBaked(
             128,

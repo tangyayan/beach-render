@@ -124,7 +124,7 @@ private:
         }
 
         // Debug 输出
-        std::cout << "sunPos: " << sunPos.x << " " << sunPos.y << " " << sunPos.z << std::endl;
+        // std::cout << "sunPos: " << sunPos.x << " " << sunPos.y << " " << sunPos.z << std::endl;
     }
 
 public:
@@ -244,9 +244,6 @@ public:
 
         glDisable(GL_CLIP_DISTANCE0);
 
-        // 新增：更新昼夜 & 画太阳立方体
-        UpdateDayNight(time, camera);
-
         // main_scene.Draw 内部会调用 light.SetLight
         main_scene.Draw(
             main_light,
@@ -278,8 +275,11 @@ public:
     }
     
     // 完整渲染一帧
-    void RenderFrame(Camera& camera, float screenWidth, float screenHeight, float time = 0.0f)
+    void RenderFrame(Camera& camera, float screenWidth, float screenHeight, float time = 0.0f, float worldtime = 0.0f)
     {
+        // 新增：更新昼夜 & 画太阳立方体
+        UpdateDayNight(worldtime, camera);
+        
         // 1. 渲染反射
         RenderWaterReflection(camera, screenWidth, screenHeight);
         

@@ -400,7 +400,7 @@ int main()
         glm::vec3 lightPos_ = glm::vec3(lmodel * glm::vec4(lightPos, 1.0f));*/
         //用于对光源进行旋转，以实现多次渲染
         // scene.Draw(light, camera, screenWidth, screenHeight, currentFrame);
-        renderer.RenderFrame(camera, static_cast<float>(screenWidth), static_cast<float>(screenHeight), worldTime);
+        renderer.RenderFrame(camera, static_cast<float>(screenWidth), static_cast<float>(screenHeight), currentFrame, worldTime);
 
         // glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 10000.0f);
         // glm::mat4 view = camera.GetViewMatrix();
